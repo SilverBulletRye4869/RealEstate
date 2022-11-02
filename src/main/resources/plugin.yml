@@ -1,0 +1,12 @@
+name: RealEstate
+version: '${project.version}'
+main: silverassist.realestate.RealEstate
+api-version: 1.17
+
+commands:
+  realestate:
+    aliases: re
+    description: "通常コマンド"
+  realestate.admin:
+    aliases: re.a
+    description: "管理コマンド"
