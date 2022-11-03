@@ -1,5 +1,6 @@
 package silverassist.realestate.command;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -9,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static silverassist.realestate.Function.*;
@@ -47,7 +49,7 @@ public class Admin implements CommandExecutor {
                     sendPrefixMessage(p,"§c§lidは整数で指定してください");
                     return true;
                 }
-                if(plugin.getConfig().get(args[1])!=null){
+                if(config.get(args[1])!=null){
                     sendPrefixMessage(p,"§c§lそのidの土地は既に存在しています");
                     return true;
                 }
@@ -85,20 +87,42 @@ public class Admin implements CommandExecutor {
                         locRegister[1][i] = s;
                     }
                 }
-                String[] memo = {".start.",".end.","x","y","z"};
+                String[] memo = {".start",".end"};
                 config.set(args[1]+".world",locS[0]);
                 for(int i = 0;i<2;i++){
-                    for(int j = 0;j<3;j++)config.set(args[1]+memo[i]+memo[2+j],locRegister[i][j]);
+                    config.set(args[1]+memo[i], Arrays.asList(locRegister[i][0],locRegister[i][1],locRegister[i][2]));
                 }
+                config.set(args[1]+".owner","admin");
+                config.set(args[1]+".price",-1);
+                config.set(args[1]+".home",p.getLocation());
+
                 plugin.saveConfig();
                 sendPrefixMessage(p,"§a指定した保護を§d§lid"+args[1]+"§a§lで登録しました");
                 p.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+                break;
+
+            case "delete":
+                if(!args[1].matches("-?\\d+")){
+                    sendPrefixMessage(p,"§c§lidは整数で指定してください");
+                    return true;
+                }
+                if(config.get(args[1])==null){
+                    sendPrefixMessage(p,"§c§lそのidの土地は存在しません");
+                    return true;
+                }
+                if(args[2] == null || args[2]!="confirm"){
+                    sendPrefixMessage(p,"§c§l本当に§d§lid:"+args[1]+"§c§lの土地を削除する場合は、以下のコマンドを実行してください");
+                    sendPrefixMessage(p,"§e/realestate.admin delete "+args[1]+" confirm");
+                    return true;
+                }
+                config.set(args[1],null);
+                sendPrefixMessage(p,"§6§lid:"+args[1]+"§c§lの土地を削除しました");
                 break;
 
             case "reload":
                 plugin.reloadConfig();
 
         }
-        return false;
+        return true;
     }
 }
