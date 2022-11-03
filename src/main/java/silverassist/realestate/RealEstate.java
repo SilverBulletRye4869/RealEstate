@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import silverassist.realestate.command.Admin;
 import silverassist.realestate.command.Normal;
 import silverassist.realestate.event.AdminEvent;
+import silverassist.realestate.event.NormalEvent;
 
 public final class RealEstate extends JavaPlugin {
     public static JavaPlugin plugin = null;
@@ -18,7 +19,10 @@ public final class RealEstate extends JavaPlugin {
         command = getCommand("realestate.admin");
         if(command!=null)command.setExecutor(new Admin());
 
+
         plugin.getServer().getPluginManager().registerEvents(new AdminEvent(),this);
+        plugin.getServer().getPluginManager().registerEvents(new NormalEvent(),this);
+
     }
 
     @Override
