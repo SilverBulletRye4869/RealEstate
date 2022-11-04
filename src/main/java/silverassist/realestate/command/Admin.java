@@ -1,6 +1,5 @@
 package silverassist.realestate.command;
 
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -9,19 +8,19 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import silverassist.realestate.RealEstate;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static silverassist.realestate.Function.*;
-import static silverassist.realestate.RealEstate.plugin;
 
 public class Admin implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player))return true;
         Player p = (Player) sender;
-        if(!isAdmin(p))return true;
+        if(!p.isOp())return true;
         if(args.length == 0){
             //ヘルプ
             return true;
@@ -30,7 +29,7 @@ public class Admin implements CommandExecutor {
         ItemStack item;
         ItemMeta meta;
         List<String> lore;
-        FileConfiguration config = plugin.getConfig();
+        FileConfiguration config = RealEstate.land.getConfig();
         switch (args[0]){
             //領域指定斧取得
             case "wand":
@@ -44,8 +43,8 @@ public class Admin implements CommandExecutor {
                 break;
             //領域登録
             case "register":
-                if(args.length==0)return true;
-                if(!args[1].matches("-?\\d+")){
+                if(args.length<2)return true;
+                if(!isInt(args[1])){
                     sendPrefixMessage(p,"§c§lidは整数で指定してください");
                     return true;
                 }
@@ -95,8 +94,9 @@ public class Admin implements CommandExecutor {
                 config.set(args[1]+".owner","admin");
                 config.set(args[1]+".price",-1);
                 config.set(args[1]+".home",p.getLocation());
+                config.set(args[1]+".default",0);
 
-                plugin.saveConfig();
+                RealEstate.land.saveConfig();
                 sendPrefixMessage(p,"§a指定した保護を§d§lid"+args[1]+"§a§lで登録しました");
                 p.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
                 break;
@@ -110,7 +110,7 @@ public class Admin implements CommandExecutor {
                     sendPrefixMessage(p,"§c§lそのidの土地は存在しません");
                     return true;
                 }
-                if(args[2] == null || args[2]!="confirm"){
+                if(args[2] == null || !args[2].equals("confirm")){
                     sendPrefixMessage(p,"§c§l本当に§d§lid:"+args[1]+"§c§lの土地を削除する場合は、以下のコマンドを実行してください");
                     sendPrefixMessage(p,"§e/realestate.admin delete "+args[1]+" confirm");
                     return true;
@@ -120,7 +120,8 @@ public class Admin implements CommandExecutor {
                 break;
 
             case "reload":
-                plugin.reloadConfig();
+                RealEstate.plugin.reloadConfig();
+                RealEstate.land.reloadConfig();
 
         }
         return true;
