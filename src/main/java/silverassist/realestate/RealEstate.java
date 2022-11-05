@@ -9,19 +9,22 @@ import silverassist.realestate.event.NormalEvent;
 
 public final class RealEstate extends JavaPlugin {
     public static JavaPlugin plugin = null;
-    public static CustomConfig land = null;
+    public static CustomConfig region = null;
     public static CustomConfig city = null;
+    public static CustomConfig memo = null;
     
     @Override
     public void onEnable() {
         // Plugin startup logic
         plugin = this;
-        land = new CustomConfig(this, "land.yml");
+        region = new CustomConfig(this, "regions.yml");
         city = new CustomConfig(this,"city.yml");
+        memo = new CustomConfig(this,"memo.yml");
 
         this.saveDefaultConfig();
-        land.saveDefaultConfig();
+        region.saveDefaultConfig();
         city.saveDefaultConfig();
+        memo.saveDefaultConfig();
 
         PluginCommand command = getCommand("realestate");
         if(command!=null)command.setExecutor(new Normal());
@@ -38,5 +41,8 @@ public final class RealEstate extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         this.saveConfig();
+        region.saveConfig();
+        city.saveConfig();
+        memo.saveConfig();
     }
 }
