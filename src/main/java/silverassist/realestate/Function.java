@@ -1,6 +1,5 @@
 package silverassist.realestate;
 
-import net.md_5.bungee.api.chat.ClickEvent;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -23,7 +22,7 @@ public class Function {
      * @param w : ワールド名
      * @return : 範囲内にあればtrue, そうでなければfalse
      */
-    private final static boolean areaCheck(Location loc, List<Double> s, List<Double> e, String w){
+    private static boolean areaCheck(Location loc, List<Float> s, List<Float> e, String w){
         if(!loc.getWorld().getName().equals(w))return false;
         if(loc.getX() < s.get(0) || loc.getX()>e.get(0))return false;
         if(loc.getZ() < s.get(2) || loc.getZ()>e.get(2))return false;
@@ -37,13 +36,14 @@ public class Function {
      * @param loc : 調査対象の座標
      * @return : 属している保護の一覧
      */
-    private final static List<String> getGuardList(Location loc){
-        FileConfiguration config = RealEstate.land.getConfig();
+    private static List<String> getGuardList(Location loc){
+        FileConfiguration region = RealEstate.region.getConfig();
+        FileConfiguration memo = RealEstate.memo.getConfig();
         List<String> guardList = new LinkedList<>();
 
         //オーダを一番気おつけないといけないところ！
-        config.getKeys(false).forEach(path ->{
-            if(!areaCheck(loc, config.getDoubleList(path+".start"),config.getDoubleList(path+".end"),config.getString(path+".world")))return;
+        memo.getStringList(String.valueOf(Math.round(loc.getX()/100))).forEach(path ->{
+            if(!areaCheck(loc, region.getFloatList(path+".start"),region.getFloatList(path+".end"),region.getString(path+".world")))return;
             guardList.add(path);
         });
         return guardList;
@@ -57,13 +57,13 @@ public class Function {
      * @param type : 実施行為
      * @return : 権限があればtrue, 無ければfalse
      */
-    public final static boolean hasPermission(Player p, Location loc, ActionType type){
+    public static boolean hasPermission(Player p, Location loc, ActionType type){
         List<String> list = getGuardList(loc);
         if(list.size()==0){
             //ない場合はワールドの設定を見るようにする(近日改良)
         }
         UUID uuid = p.getUniqueId();
-        FileConfiguration config = RealEstate.land.getConfig();
+        FileConfiguration config = RealEstate.region.getConfig();
 
         AtomicBoolean allow = new AtomicBoolean(true);
         list.forEach(id -> {
@@ -83,11 +83,11 @@ public class Function {
      * @param id : 土地のid
      * @return : Ownerであればtrue, そうでないならfalse
      */
-    public final static boolean isOwner(OfflinePlayer p, String id){
+    public static boolean isOwner(OfflinePlayer p, String id){
         if(p.isOp())return true;
-        String owner = RealEstate.land.getConfig().getString(id+".owner");
+        String owner = RealEstate.region.getConfig().getString(id+".owner");
         if(owner.equals("admin"))return false;
-        return RealEstate.land.getConfig().get(id+".owner").equals(p.getUniqueId().toString());
+        return RealEstate.region.getConfig().get(id+".owner").equals(p.getUniqueId().toString());
     }
 
 
@@ -98,14 +98,14 @@ public class Function {
      * @return : Adminであればtrue, そうでなければfalse
      */
     public static boolean isAdmin(OfflinePlayer p, String id){
-        String s = new StringBuilder(Integer.toBinaryString(RealEstate.land.getConfig().getInt(id+".user."+p.getUniqueId()))).reverse() + "0000000000";
+        String s = new StringBuilder(Integer.toBinaryString(RealEstate.region.getConfig().getInt(id+".user."+p.getUniqueId()))).reverse() + "0000000000";
         return s.charAt(ActionType.ADMIN.getNum())=='1'||isOwner(p,id);
     }
 
 
     //-----------------------------------------------------------------一般関数
     //Prefix付きのメッセージに変更
-    public final static void sendPrefixMessage(Player p, String text){
+    public static void sendPrefixMessage(Player p, String text){
         p.sendMessage(PREFIX+text);
     }
 
