@@ -20,7 +20,7 @@ public class Normal implements CommandExecutor {
             openMergeGui(p);
             return true;
         }
-        FileConfiguration config = RealEstate.land.getConfig();
+        FileConfiguration config = RealEstate.region.getConfig();
 
         Location loc;
         Player target;
@@ -97,7 +97,7 @@ public class Normal implements CommandExecutor {
 
 
         }
-        RealEstate.land.saveConfig();
+        RealEstate.region.saveConfig();
         return true;
     }
 
