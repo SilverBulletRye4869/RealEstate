@@ -41,8 +41,10 @@ public class Function {
         FileConfiguration memo = RealEstate.memo.getConfig();
         List<String> guardList = new LinkedList<>();
 
-        //オーダを一番気おつけないといけないところ！
-        memo.getStringList(String.valueOf(Math.round(loc.getX()/100))).forEach(path ->{
+        //オーダを一番気おつけないといけないところ!
+        List<String> x = memo.getStringList("x"+Math.round(loc.getX()/100));
+        memo.getStringList("z"+Math.round(loc.getZ()/100)).forEach(path ->{
+            if(!x.contains(path))return;
             if(!areaCheck(loc, region.getFloatList(path+".start"),region.getFloatList(path+".end"),region.getString(path+".world")))return;
             guardList.add(path);
         });
