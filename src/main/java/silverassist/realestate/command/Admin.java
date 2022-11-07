@@ -12,6 +12,7 @@ import silverassist.realestate.RealEstate;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import static silverassist.realestate.Function.*;
 
@@ -32,6 +33,7 @@ public class Admin implements CommandExecutor {
         FileConfiguration region = RealEstate.region.getConfig();
         FileConfiguration city = RealEstate.city.getConfig();
         FileConfiguration memo = RealEstate.memo.getConfig();
+        char[] cood = {'x','z'};
         switch (args[0]){
             //領域指定斧取得
             case "wand":
@@ -92,12 +94,13 @@ public class Admin implements CommandExecutor {
                 region.set(args[1]+".world",locS[0]);
                 region.set(args[1]+".start", Arrays.asList(locRegister[0][0],locRegister[0][1],locRegister[0][2]));
                 region.set(args[1]+".end", Arrays.asList(locRegister[1][0],locRegister[1][1],locRegister[1][2]));
-                for(int i = Math.round(locRegister[0][0]/100); i<=Math.round(locRegister[1][0]/100); i++){
-                    List<String> list = memo.getStringList(String.valueOf(i));
-                    list.add(args[1]);
-                    memo.set(String.valueOf(i),list);
+                for(int i = 0;i<2;i++) {
+                    for (int j = Math.round(locRegister[0][i*2] / 100); j <= Math.round(locRegister[1][i*2] / 100); j++) {
+                        List<String> list = memo.getStringList(cood[i]+String.valueOf(j));
+                        list.add(args[1]);
+                        memo.set(cood[i]+String.valueOf(j), list);
+                    }
                 }
-
                 //configに記録 & 登録通知
                 region.set(args[1]+".owner","admin");
                 region.set(args[1]+".price",-1);
@@ -105,7 +108,7 @@ public class Admin implements CommandExecutor {
                 region.set(args[1]+".default",0);
                 sendPrefixMessage(p,"§a指定した保護を§d§lid"+args[1]+"§a§lで登録しました");
                 p.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
-                if(args.length<2)region.set(args[1]+".city","");
+                if(args.length<3)region.set(args[1]+".city","");
                 else {
                     region.set(args[1]+".city",args[2]);
                     if(city.get(args[2])==null)cityCreate(args[2],city);//都市がなければ自動生成
@@ -128,26 +131,52 @@ public class Admin implements CommandExecutor {
                     return true;
                 }
                 region.set(args[1],null);
-                for(int i = Math.round(region.getFloatList(args[1]+".start").get(0)/100); i<=Math.round(region.getFloatList(args[1]+".end").get(0)/100); i++){
-                    List<String> list = memo.getStringList(String.valueOf(i));
-                    list.remove(args[1]);
-                    memo.set(String.valueOf(i),list);
+                for(int i = 0;i<2;i++) {
+                    for (int j = Math.round(region.getFloatList(args[1] + ".start").get(0) / 100); j <= Math.round(region.getFloatList(args[1] + ".end").get(0) / 100); j++) {
+                        List<String> list = memo.getStringList(cood[i]+String.valueOf(j));
+                        list.remove(args[1]);
+                        memo.set(cood[i]+String.valueOf(j), list);
+                    }
                 }
                 sendPrefixMessage(p,"§6§lid:"+args[1]+"§c§lの土地を削除しました");
                 break;
 
 
             case "city":
-                if(args.length<3)return true;
-                switch (args[1]){
+                if(args.length<2)return true;
+                switch (args[1]) {
                     case "belong":
-                        if(args[2]==null)return true;
+                        if (args.length<4) return true;
+                        if (region.get(args[2]) == null) {
+                            sendPrefixMessage(p, "§cそのidの土地は見つかりません");
+                            return true;
+                        }
+                        region.set(args[2] + ".city", args[3]);
+                        if (city.get(args[3]) == null) cityCreate(args[3], city);//都市がなければ自動生成
+                        sendPrefixMessage(p, "§did:" + args[2] + "§aの土地を§6" + args[3] + "§aに所属させました");
+                        break;
                         //ここに所属させる処理
                     case "list":
-                        if(args[2]==null){
+                        Set<String> list;
+                        if (args.length==2) {
+                            list = city.getKeys(false);
+                            sendPrefixMessage(p, "§a都市の一覧は次の通りです");
+                            list.forEach(name -> sendPrefixMessage(p, "§e" + name));
+                            sendPrefixMessage(p, "§6--- 以上 ---");
+                        } else {
+                            if(city.get(args[2])==null){
+                                sendPrefixMessage(p,"§cその名前の都市は存在しません");
+                                return true;
+                            }
 
-                        }else{
-
+                            //逆引きできないのかな...?
+                            list = region.getKeys(false);
+                            sendPrefixMessage(p,"§a都市『§d"+args[2]+"§a』に属するidは次の通りです");
+                            list.forEach(id ->{
+                                if(!region.getString(id+".city").equals(args[2]))return;
+                                sendPrefixMessage(p,"§e"+id);
+                            });
+                            sendPrefixMessage(p,"§6--- 以上 ---");
                         }
                 }
 
