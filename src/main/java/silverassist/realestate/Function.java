@@ -1,9 +1,13 @@
 package silverassist.realestate;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -119,6 +123,17 @@ public class Function {
     //整数かどうか判定
     public static boolean isInt(String s){
         return s.matches("-?\\d+");
+    }
+
+    //アイテムを作成
+    public static ItemStack createItem(Material m,String name,List<String> lore,int... model){
+        ItemStack item = new ItemStack(m);
+        ItemMeta meta = item.getItemMeta();
+        if(name!=null)meta.setDisplayName(name);
+        if(lore.size()>0)meta.setLore(lore);
+        if(model.length>0)meta.setCustomModelData(model[0]);
+        item.setItemMeta(meta);
+        return item;
     }
 
 
