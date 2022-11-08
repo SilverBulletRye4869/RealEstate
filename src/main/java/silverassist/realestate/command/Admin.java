@@ -130,7 +130,6 @@ public class Admin implements CommandExecutor {
                     sendPrefixMessage(p,"§e/realestate.admin delete "+args[1]+" confirm");
                     return true;
                 }
-                region.set(args[1],null);
                 for(int i = 0;i<2;i++) {
                     for (int j = Math.round(region.getFloatList(args[1] + ".start").get(0) / 100); j <= Math.round(region.getFloatList(args[1] + ".end").get(0) / 100); j++) {
                         List<String> list = memo.getStringList(cood[i]+String.valueOf(j));
@@ -138,6 +137,7 @@ public class Admin implements CommandExecutor {
                         memo.set(cood[i]+String.valueOf(j), list);
                     }
                 }
+                region.set(args[1],null);
                 sendPrefixMessage(p,"§6§lid:"+args[1]+"§c§lの土地を削除しました");
                 break;
 
