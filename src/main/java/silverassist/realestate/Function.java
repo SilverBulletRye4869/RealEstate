@@ -1,5 +1,7 @@
 package silverassist.realestate;
 
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -8,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.awt.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -134,6 +137,12 @@ public class Function {
         if(model.length>0)meta.setCustomModelData(model[0]);
         item.setItemMeta(meta);
         return item;
+    }
+
+    public static void sendSuggestMessage(Player p, String text, String command){
+        TextComponent msg = new TextComponent(text);
+        msg.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,command));
+        p.spigot().sendMessage(msg);
     }
 
 
