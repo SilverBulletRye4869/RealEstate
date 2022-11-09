@@ -1,11 +1,13 @@
 package silverassist.realestate;
 
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import silverassist.realestate.command.Admin;
 import silverassist.realestate.command.Normal;
 import silverassist.realestate.event.AdminEvent;
 import silverassist.realestate.event.NormalEvent;
+import silverassist.realestate.menu.InvClick;
 
 public final class RealEstate extends JavaPlugin {
     public static JavaPlugin plugin = null;
@@ -32,8 +34,10 @@ public final class RealEstate extends JavaPlugin {
         if(command!=null)command.setExecutor(new Admin());
 
 
-        plugin.getServer().getPluginManager().registerEvents(new AdminEvent(),this);
-        plugin.getServer().getPluginManager().registerEvents(new NormalEvent(),this);
+        PluginManager pm = plugin.getServer().getPluginManager();
+        pm.registerEvents(new AdminEvent(),this);
+        pm.registerEvents(new NormalEvent(),this);
+        pm.registerEvents(new InvClick(),this);
 
     }
 
