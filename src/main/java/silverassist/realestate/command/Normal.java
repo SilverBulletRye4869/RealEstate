@@ -2,17 +2,14 @@ package silverassist.realestate.command;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
+import silverassist.realestate.menu.InvMain;
 import silverassist.realestate.RealEstate;
-
-import java.util.List;
 
 import static silverassist.realestate.Function.*;
 
@@ -119,25 +116,12 @@ public class Normal implements CommandExecutor {
                     default:
                         if(!isInt(args[1]))return true;
                         if(!isAdmin(p,args[1]))return true;
-                        openMergeGui(p,args[1]+".def");
+                        InvMain.openManageGui(p,args[1]+".def");
                 }
         }
         RealEstate.region.saveConfig();
         return true;
     }
 
-    private void openMergeGui(Player p, String type){
-        List<String> data = List.of(type.split("\\."));
-        if(data.size()==1)return;
-        Inventory inv = null;
-        switch (data.get(1)){
-            case "def":
-                inv = Bukkit.createInventory(p,54,"§1§lid:"+data.get(0)+"§1§lの管理ページ");
-                inv.setItem(0,createItem(Material.GRASS_BLOCK,"§a§l土地の詳細設定",List.of("§f土地の状態を設定できます"),0));
-                inv.setItem(1,createItem(Material.PLAYER_HEAD,"§a§l土地の住人を管理",List.of("§f土地の住人を管理できます"),0));
-                if(isOwner(p,data.get(0)))inv.setItem(2,createItem(Material.DIAMOND_BLOCK,"§b§lオーナー権の譲渡",List.of("§fOwner権を譲渡することができます"),0));
-        }
-        if(inv!=null)p.openInventory(inv);
-        //近日実装
-    }
+
 }
