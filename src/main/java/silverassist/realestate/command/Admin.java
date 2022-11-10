@@ -106,6 +106,7 @@ public class Admin implements CommandExecutor {
                 region.set(args[1]+".price",-1);
                 region.set(args[1]+".home",p.getLocation());
                 region.set(args[1]+".default",0);
+                region.set(args[1]+".status","protect");
                 sendPrefixMessage(p,"§a指定した保護を§d§lid"+args[1]+"§a§lで登録しました");
                 p.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
                 if(args.length<3)region.set(args[1]+".city","");
