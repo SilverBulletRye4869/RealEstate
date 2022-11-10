@@ -10,7 +10,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.awt.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +28,7 @@ public class Function {
      * @param w : ワールド名
      * @return : 範囲内にあればtrue, そうでなければfalse
      */
-    private static boolean areaCheck(Location loc, List<Float> s, List<Float> e, String w){
+    public static boolean areaCheck(Location loc, List<Float> s, List<Float> e, String w){
         if(!loc.getWorld().getName().equals(w))return false;
         if(loc.getX() < s.get(0) || loc.getX()>e.get(0))return false;
         if(loc.getZ() < s.get(2) || loc.getZ()>e.get(2))return false;
@@ -72,15 +71,16 @@ public class Function {
             //ない場合はワールドの設定を見るようにする(近日改良)
         }
         UUID uuid = p.getUniqueId();
-        FileConfiguration config = RealEstate.region.getConfig();
+        FileConfiguration region = RealEstate.region.getConfig();
 
         AtomicBoolean allow = new AtomicBoolean(true);
         list.forEach(id -> {
-            int perm = config.getInt(id+".user."+uuid);
-            if(perm == 0)perm = config.getInt(id+".default");
-            String s = new StringBuilder(Integer.toBinaryString(perm)).reverse() + "0000000000";
-            if(isAdmin(p,id)||s.charAt(ActionType.ALL.getNum())=='1')return;
-            if(s.charAt(type.getNum())=='0') allow.set(false);
+            if(region.getString(id+".status").equals("free"))return; //フリーな土地ならスルー
+            int permNum = region.getInt(id+".user."+uuid);
+            if(permNum == 0)permNum = region.getInt(id+".default");
+            String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";
+            if(isAdmin(p,id)||perm.charAt(ActionType.ALL.getNum())=='1')return; //管理権限orフル活動権限があればスルー
+            if(perm.charAt(type.getNum())=='0') allow.set(false); //BLOCKの権限がなければfalseにする
         });
         return allow.get();
     }
@@ -133,14 +133,14 @@ public class Function {
         ItemStack item = new ItemStack(m);
         ItemMeta meta = item.getItemMeta();
         if(name!=null)meta.setDisplayName(name);
-        if(lore.size()>0)meta.setLore(lore);
+        if(lore!=null&&lore.size()>0)meta.setLore(lore);
         if(model.length>0)meta.setCustomModelData(model[0]);
         item.setItemMeta(meta);
         return item;
     }
 
     public static void sendSuggestMessage(Player p, String text, String command){
-        TextComponent msg = new TextComponent(text);
+        TextComponent msg = new TextComponent(PREFIX + text);
         msg.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,command));
         p.spigot().sendMessage(msg);
     }
