@@ -14,7 +14,6 @@ import silverassist.realestate.ActionType;
 
 import java.util.List;
 
-import static silverassist.realestate.Function.PREFIX;
 import static silverassist.realestate.Function.*;
 
 public class NormalEvent implements Listener {
