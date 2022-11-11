@@ -75,12 +75,15 @@ public class Function {
 
         AtomicBoolean allow = new AtomicBoolean(true);
         list.forEach(id -> {
-            if(region.getString(id+".status").equals("free"))return; //フリーな土地ならスルー
+            String status = region.getString(id+".status");
+            if(status.equals("free"))return; //フリーな土地ならスルー
+            if(status.equals("frozen") && !p.isOp())allow.set(false); //凍結された土地ならop以外falseにする
+
             int permNum = region.getInt(id+".user."+uuid);
             if(permNum == 0)permNum = region.getInt(id+".default");
             String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";
             if(isAdmin(p,id)||perm.charAt(ActionType.ALL.getNum())=='1')return; //管理権限orフル活動権限があればスルー
-            if(perm.charAt(type.getNum())=='0') allow.set(false); //BLOCKの権限がなければfalseにする
+            if(perm.charAt(type.getNum())=='0') allow.set(false); //各行動の権限がなければfalseにする
         });
         return allow.get();
     }
