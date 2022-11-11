@@ -44,19 +44,28 @@ public class Normal implements CommandExecutor {
                 break;
             case "manage":
                 if(args.length<2)return true;
-                else if((args.length>2 && !isInt(args[2])) || args.length==2 && !isInt(args[1])){
+                else if(!isInt(args[1])){
                     sendPrefixMessage(p,"§c土地のidは整数で入力してください");
                     return true;
-                }else if((args.length>2 && region.get(args[2])==null) || (args.length==2 && region.get(args[1])==null)){
+                }else if((region.get(args[1])==null)){
                     sendPrefixMessage(p,"§c指定したidの土地が見つかりません");
                     return true;
                 }
 
-                switch (args[1]){
+                if(args.length<3){
+                    if(!isAdmin(p,args[1])){
+                        sendPrefixMessage(p,"§cあなたはこの土地を管理する権限がありません！");
+                        return true;
+                    }
+                    InvMain.openManageGui(p,args[1]+".def");
+                    break;
+                }
+
+                switch (args[2]){
                     //-----------------------------------------------------------------オーナ権の譲渡
                     case "setowner":
                         if(args.length<5)return true;
-                        if(!isOwner(p,args[2])){
+                        if(!isOwner(p,args[1])){
                             sendPrefixMessage(p,"§cあなたはその土地のオーナではありません");
                             return true;
                         }
@@ -68,16 +77,16 @@ public class Normal implements CommandExecutor {
                         if(args[4]==null||!args[4].equals("confirm")){
                             sendPrefixMessage(p,"§c--------【警告】--------");
                             sendPrefixMessage(p,"§6本当にオーナ権限を譲渡する場合は次のコマンドを実行してください");
-                            sendPrefixMessage(p,"§c/re manage setowner "+args[2]+" "+ args[3] +" confirm");
+                            sendPrefixMessage(p,"§c/re manage setowner "+args[1]+" "+ args[3] +" confirm");
                             return true;
                         }
-                        region.set(args[2]+".owner",target.getUniqueId().toString());
-                        sendPrefixMessage(p,PREFIX+"§a"+args[3]+"を§did"+args[2]+"§aのオーナーとして登録しました");
+                        region.set(args[1]+".owner",target.getUniqueId().toString());
+                        sendPrefixMessage(p,PREFIX+"§a"+args[3]+"を§did"+args[1]+"§aのオーナーとして登録しました");
                         break;
                     //------------------------------------------------------------------住人追加
                     case "adduser":
                         if(args.length<4)return true;
-                        if(!isAdmin(p,args[2])){
+                        if(!isAdmin(p,args[1])){
                             sendPrefixMessage(p,"§cあなたはその土地を管理する権限がありません");
                             return true;
                         }
@@ -86,22 +95,42 @@ public class Normal implements CommandExecutor {
                             sendPrefixMessage(p,"§cプレイヤー名が間違っているかオフラインです");
                             return true;
                         }
-                        if(region.getInt(args[2]+".user."+target.getUniqueId()) !=0){
+                        if(region.getInt(args[1]+".user."+target.getUniqueId()) !=0){
                             sendPrefixMessage(p,"§cそのプレイヤーは既に登録されています");
                             return true;
                         }
-                        region.set(args[2]+".user."+target.getUniqueId(),0);
-                        sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+args[2]+"§aの土地に登録しました");
+                        region.set(args[1]+".user."+target.getUniqueId(),0);
+                        sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+args[1]+"§aの土地に登録しました");
                         break;
-                    //-------------------------------------------------------------------権限設定
-                    case "setpermission":
-                        if(args.length<5)return true;
-                        if(!isAdmin(p,args[2])){
+                    //-------------------------------------------------------------------住人退去
+                    case "removeuser":
+                        if(args.length<4)return true;
+                        if(!isAdmin(p,args[1])){
                             sendPrefixMessage(p,"§cあなたはその土地を管理する権限がありません");
                             return true;
                         }
                         target = Bukkit.getOfflinePlayer(args[3]);
-                        if(region.getString(args[2]+".user."+target.getUniqueId())==null){
+                        if(!region.getConfigurationSection(args[1]+".user").getKeys(false).contains(target.getUniqueId().toString())){
+                            sendPrefixMessage(p,"§cその人は入居していません");
+                            return true;
+                        }
+                        if(!isOwner(p,args[1])&&isAdmin(target,args[1])){
+                            sendPrefixMessage(p,"§cあなたはこの人を退去させることはできません");
+                            return true;
+                        }
+                        region.set(args[1]+".user."+target.getUniqueId(),null);
+                        sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+args[1]+"§aの土地から削除しました");
+                        break;
+
+                    //-------------------------------------------------------------------権限設定
+                    case "setpermission":
+                        if(args.length<5)return true;
+                        if(!isAdmin(p,args[1])){
+                            sendPrefixMessage(p,"§cあなたはその土地を管理する権限がありません");
+                            return true;
+                        }
+                        target = Bukkit.getOfflinePlayer(args[3]);
+                        if(region.getString(args[1]+".user."+target.getUniqueId())==null){
                             sendPrefixMessage(p,"§cそのプレイヤーは住人として登録されていません");
                             return true;
                         }
@@ -110,20 +139,34 @@ public class Normal implements CommandExecutor {
                             return true;
                         }
                         int perm = Integer.parseInt(args[4]);
-                        if(perm%2==1 && !isOwner(p,args[2])){
+                        if(perm%2==1 && !isOwner(p,args[1])){
                             sendPrefixMessage(p,"§cあなたはこのパーミッション値にする権限がありません");
                             return true;
                         }
-                        region.set(args[2]+".user."+target.getUniqueId(),perm);
+                        region.set(args[1]+".user."+target.getUniqueId(),perm);
                         sendPrefixMessage(p,"§d"+args[3]+"§aのパーミッション値を§d"+perm+"§aに設定しました");
                         break;
-                    default:
-                        if(!isInt(args[1]))return true;
-                        if(!isAdmin(p,args[1])){
-                            sendPrefixMessage(p,"§cあなたはこの土地を管理する権限がありません！");
+
+                    //----------------------------------------------------------------------値段設定
+                    case "setprice":
+                        if(args.length<4)return true;
+                        if(!isOwner(p,args[1])){
+                            sendPrefixMessage(p,"§cこの土地の値段を設定する権限がありません");
                             return true;
                         }
-                        InvMain.openManageGui(p,args[1]+".def");
+                        if(args[3].length()>10){
+                            sendPrefixMessage(p,"§c値段が高すぎます！");
+                            return true;
+                        }
+                        int price = Integer.parseInt(args[3]);
+                        if(price<0){
+                            sendPrefixMessage(p,"§c値段は0以上の自然数にする必要があります");
+                            return true;
+                        }
+                        region.set(args[1]+".price",args[3]);
+                        sendPrefixMessage(p,"§aid:"+args[1]+"の土地の値段を§d"+args[3]+"§aに設定しました");
+                        break;
+
                 }
         }
         RealEstate.region.saveConfig();
