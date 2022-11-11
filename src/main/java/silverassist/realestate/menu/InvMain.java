@@ -59,7 +59,7 @@ public class InvMain {
                                 slot = 0;
                                 for(String uuidStr : uuidList){
                                     UUID u = UUID.fromString(uuidStr);
-                                    if(p.getUniqueId().equals(u))return; //--デバック時アウト
+                                    //if(p.getUniqueId().equals(u))continue; //--デバック時アウト
                                     ItemStack head = createItem(Material.PLAYER_HEAD,"§a§l"+Bukkit.getOfflinePlayer(u).getName(),List.of("§fuuid: "+u));
                                     SkullMeta meta = (SkullMeta) head.getItemMeta();
                                     meta.setOwningPlayer(Bukkit.getOfflinePlayer(u));
@@ -70,11 +70,7 @@ public class InvMain {
                                 break;
                             default:
                                 UUID u = UUID.fromString(t3);
-                                inv = Bukkit.createInventory(p,18,"§1§lid:"+id+"の「"+Bukkit.getPlayer(u).getName()+"」の権限設定");
-                                for(int i : new int[]{0,1,7,8}){
-                                    inv.setItem(i,createItem(Material.LIGHT_BLUE_STAINED_GLASS_PANE,"§r",null));
-                                    inv.setItem(9+i,createItem(Material.LIGHT_BLUE_STAINED_GLASS_PANE,"§r",null));
-                                }
+                                inv = createDefaultGui(p,2,"§1§lid:"+id+"の「"+Bukkit.getPlayer(u).getName()+"」の権限設定");
                                 inv.setItem(2,createItem(Material.GOLD_BLOCK,"§6§l管理(Admin)権限",List.of("§f下記を除くすべての行動が可能です","§6・Ownerの任命","§6・Adminの任命","§6・土地状態の変更","§6・土地の値段変更")));
                                 inv.setItem(3,createItem(Material.IRON_BLOCK,"§7§lフル活動権限",List.of("§f土地の管理行為を除く","§fすべての行動が可能です")));
                                 inv.setItem(4,createItem(Material.GRASS_BLOCK,"§a§lブロック権限",List.of("§fブロックの設置･破壊が可能です")));
@@ -87,9 +83,37 @@ public class InvMain {
                                     if(perm.charAt(i)=='1')inv.setItem(11+i,createItem(Material.LIME_STAINED_GLASS_PANE,"§a§l許可",null));
                                     else inv.setItem(11+i,createItem(Material.RED_STAINED_GLASS_PANE,"§c§l拒否",null));
                                 }
-                                if(!isOwner(p,id))inv.setItem(11,createItem(Material.BARRIER,"§c変更権限なし",null));
+                                if(!isOwner(p,id))inv.setItem(11,createItem(Material.BARRIER,"§c§l変更権限なし",null));
                                 inv.setItem(17,createItem(Material.LAVA_BUCKET,"§c§lユーザーを退去",List.of("§6ここをクリックして、","§6ユーザーを退去させる")));
+
+                                //AdminはAdminを退去させられない
+                                if(isOwner(p,id))break;
+                                if(!isAdmin(Bukkit.getOfflinePlayer(u),id))break;
+                                inv.setItem(17,createItem(Material.BARRIER,"§c§l退去権限なし",null));
                         }
+                        break;
+
+                    case "defaultPermission":
+                        inv = createDefaultGui(p,2,"§1§lid:"+id+"のデフォルト権限設定");
+                        inv.setItem(2,createItem(Material.GOLD_BLOCK,"§6§l管理(Admin)権限",null));
+                        inv.setItem(3,createItem(Material.IRON_BLOCK,"§7§lフル活動権限 §c§l(拒否推奨)",List.of("§f土地の管理行為を除く","§fすべての行動が可能です")));
+                        inv.setItem(4,createItem(Material.GRASS_BLOCK,"§a§lブロック権限 §c§l(拒否推奨)",List.of("§fブロックの設置･破壊が可能です")));
+                        inv.setItem(5,createItem(Material.OAK_DOOR,"§e§l右クリック権限 §c§l(拒否推奨)",List.of("§fチェスト系ブロック以外の","§fブロックに対して右クリック","§fを実行できます")));
+                        inv.setItem(6,createItem(Material.CHEST,"§e§lチェストアクセス権限 §c§l(拒否推奨)",List.of("§fチェスト系ブロックへの","§fアクセスが可能です")));
+                        inv.setItem(11,createItem(Material.BARRIER,"§c§l変更権限なし",List.of("§fこの権限をデフォルトに","§fすることは、できません")));
+                        int permNum = region.getInt(id+".default");
+                        String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";
+                        for(int i = 1;i< ActionType.values().length;i++){
+                            if(perm.charAt(i)=='1')inv.setItem(11+i,createItem(Material.LIME_STAINED_GLASS_PANE,"§a§l許可 §c§l(非推奨)",null));
+                            else inv.setItem(11+i,createItem(Material.RED_STAINED_GLASS_PANE,"§c§l拒否 §6§l(推奨)",null));
+                        }
+                        break;
+
+                    case "status":
+                        inv = createDefaultGui(p,1,"§1§lid:"+id+"のステータス設定");
+                        inv = setItemPlus(inv,createItem(Material.GOLD_INGOT,"§c§l販売中にする",List.of("§f土地が売りに出されます。","§6土地が購入されると、オーナー","§6権限が自動的に譲渡されます")),0,1);
+                        inv = setItemPlus(inv,createItem(Material.TRIPWIRE_HOOK,"§6§l保護状態にする §a§l(推奨)",List.of("§f土地が保護されます")),3,4,5);
+                        inv = setItemPlus(inv,createItem(Material.RED_STAINED_GLASS_PANE,"§6§l保護を無効化する §c§l(非推奨)",List.of("§f全プレイヤーが全行動をする","§fことができます。")),7,8);
                         break;
                 }
         }

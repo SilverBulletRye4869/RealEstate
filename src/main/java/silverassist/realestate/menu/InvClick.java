@@ -1,5 +1,6 @@
 package silverassist.realestate.menu;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -9,11 +10,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import silverassist.realestate.RealEstate;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static silverassist.realestate.menu.InvFunc.*;
@@ -21,8 +24,6 @@ import static silverassist.realestate.menu.InvMain.openManageGui;
 import static silverassist.realestate.Function.*;
 
 public class InvClick implements Listener {
-
-
     @EventHandler
     public void ClickEvent(InventoryClickEvent e){
         Player p = (Player)e.getWhoClicked();
@@ -54,8 +55,8 @@ public class InvClick implements Listener {
                         break;
                     case 2:
                         sendPrefixMessage(p,"§e§l土地のOwnerを変更するには次のコマンドを実行してください");
-                        sendPrefixMessage(p,"§a§l/re manage setowner "+id+" <MCID> confirm");
-                        sendSuggestMessage(p,"§d§l[ここをクリックで自動入力]","/re manage setowner "+id+" ");
+                        sendPrefixMessage(p,"§a§l/re manage "+id+" setowner <MCID> confirm");
+                        sendSuggestMessage(p,"§d§l[ここをクリックで自動入力]","/re manage "+id+" setowner ");
                         break;
                 }
                 break;
@@ -80,8 +81,8 @@ public class InvClick implements Listener {
                                 break;
                             case 6:
                                 sendPrefixMessage(p,"§e§l土地の値段を変更するには次のコマンドを実行してください");
-                                sendPrefixMessage(p,"§a§l/re manage setprice "+id+" <値段>");
-                                sendSuggestMessage(p,"§d§l[ここをクリックで自動入力]","/re manage setprice "+id+" ");
+                                sendPrefixMessage(p,"§a§l/re manage "+id+" setprice <値段>");
+                                sendSuggestMessage(p,"§d§l[ここをクリックで自動入力]","/re manage "+id+" setprice ");
                                 break;
 
                         }
@@ -98,18 +99,40 @@ public class InvClick implements Listener {
                                 nextInv = id+".admin.person."+uuid;
                                 break;
                             default:
-                                if(slot<11||slot>15)return;
-                                int permPlace = slot - 11;
-                                int permNum = region.getInt(id+".user."+t3);
-                                if(item.getType()==Material.LIME_STAINED_GLASS_PANE){
-                                    permNum -= Math.pow(2,permPlace);
-                                    e.getInventory().setItem(slot,createItem(Material.RED_STAINED_GLASS_PANE,"§c§l拒否",null));
-                                }else{
-                                    permNum += Math.pow(2,permPlace);
-                                    e.getInventory().setItem(slot,createItem(Material.LIME_STAINED_GLASS_PANE,"§a§l許可",null));
+                                if(slot == 17){
+                                    region.set(id+".user."+t3,null);
+                                    sendPrefixMessage(p,"§a"+Bukkit.getOfflinePlayer(UUID.fromString(t3)).getName()+"を§did:"+id+"§aの土地から削除しました");
+                                    break;
                                 }
-                                region.set(id+".user."+ t3,permNum);
-                                CloseCancel = true;
+                                SetPermission(e,region,id+".user."+t3);
+                                CloseCancel=true;
+
+                        }
+                        break;
+
+                    case "defaultPermission":
+                        InvFunc.SetPermission(e,region,id+".default");
+                        CloseCancel=true;
+                        break;
+
+                    case "status":
+                        switch (slot){
+                            case 0:
+                            case 1:
+                                region.set(id+".status","sale");
+                                sendPrefixMessage(p,"§a§l土地の状態を「§c§l販売中§a§l」に設定しました");
+                                break;
+                            case 3:
+                            case 4:
+                            case 5:
+                                region.set(id+".status","protect");
+                                sendPrefixMessage(p,"§a§l土地の状態を「§6§l保護中§a§l」に設定しました");
+                                break;
+                            case 7:
+                            case 8:
+                                region.set(id+".status","free");
+                                sendPrefixMessage(p,"§a§l土地の状態を「§c§l保護無効中§a§l」に設定しました");
+                                break;
                         }
                         break;
                 }
@@ -127,4 +150,10 @@ public class InvClick implements Listener {
     public void CloseEvent(InventoryCloseEvent e){
         curInv.remove((Player)e.getPlayer());
     }
+    @EventHandler
+    public void JoinEvent(PlayerJoinEvent e){
+        curInv.remove(e.getPlayer());
+    }
+
+
 }
