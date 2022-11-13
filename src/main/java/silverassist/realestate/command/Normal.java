@@ -1,5 +1,6 @@
 package silverassist.realestate.command;
 
+import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -11,7 +12,10 @@ import org.bukkit.entity.Player;
 import silverassist.realestate.menu.InvMain;
 import silverassist.realestate.RealEstate;
 
+import java.util.UUID;
+
 import static silverassist.realestate.Function.*;
+import static silverassist.realestate.RealEstate.vault;
 
 public class Normal implements CommandExecutor {
     @Override
@@ -20,10 +24,48 @@ public class Normal implements CommandExecutor {
         Player p = (Player) sender;
         if(args.length==0)return true;
         FileConfiguration region = RealEstate.region.getConfig();
+        FileConfiguration config = RealEstate.plugin.getConfig();
 
         Location loc;
         OfflinePlayer target;
         switch (args[0]){
+            case "buy":
+                if(args.length==1)return true;
+                if(!isInt(args[1]))return true;
+                String id = args[1];
+
+                if(region.get(id)==null){
+                    sendPrefixMessage(p,"§c土地が存在しません！");
+                    return true;
+                }
+                if(!region.get(id+".status").equals("sale")){
+                    sendPrefixMessage(p,"§c現在この土地を購入することはできません");
+                    return true;
+                }
+                int money = region.getInt(id+".price");
+                Economy economy = vault.getEconomy();
+                if(economy.getBalance(p) < money){
+                    sendPrefixMessage(p,"§c所持金がたりません！");
+                    return true;
+                }
+
+                if(args.length==2 || !args[2].equals("confirm")){
+                    sendBuyCheckMessage(p,args[1],true);
+                    return true;
+                }
+
+                economy.withdrawPlayer(p, money);
+                if(!region.getString(id+".owner").equals("admin")){
+                    target = Bukkit.getOfflinePlayer(UUID.fromString(region.getString(id+".owner")));
+                    economy.withdrawPlayer(target,money);
+                    if(target.isOnline()){
+                        sendPrefixMessage((Player) target,"§d§lid:"+id+"§a§lの土地が購入されました！");
+                    }
+                }
+                region.set(id+".owner",p.getUniqueId().toString());
+                sendPrefixMessage(p,"§d§lid:"+id+"§a§lの土地を§d§l"+money+ (config.get("money_unit")) +"§a§lで購入しました");
+                break;
+
             //------------------------------------------------------土地へのテレポート
             case "tp":
             case "teleport":
