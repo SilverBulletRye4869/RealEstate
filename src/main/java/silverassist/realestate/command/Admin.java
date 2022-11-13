@@ -10,9 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import silverassist.realestate.RealEstate;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static silverassist.realestate.Function.*;
 
@@ -103,21 +101,24 @@ public class Admin implements CommandExecutor {
                 }
                 //configに記録 & 登録通知
                 region.set(args[1]+".owner","admin");
-                region.set(args[1]+".price",-1);
+                region.set(args[1]+".price",0);
                 region.set(args[1]+".home",p.getLocation());
                 region.set(args[1]+".default",0);
                 region.set(args[1]+".status","protect");
+                region.set(args[1]+".sign", new HashSet<>());
                 sendPrefixMessage(p,"§a指定した保護を§d§lid"+args[1]+"§a§lで登録しました");
                 p.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
                 if(args.length<3)region.set(args[1]+".city","");
                 else {
                     region.set(args[1]+".city",args[2]);
-                    if(city.get(args[2])==null)cityCreate(args[2],city);//都市がなければ自動生成
+                    if(city.get(args[2])==null)cityCreate(args[2],city,1000000);//都市がなければ自動生成
+                    region.set(args[1]+".price",RealEstate.city.getConfig().getInt(args[2]+".defaultPrice"));
                     sendPrefixMessage(p,"§did:"+args[1]+"§aの土地を§6"+args[2]+"§aに所属させました");
                 }
                 break;
 
             case "delete":
+                if(args.length==1)return true;
                 if(!args[1].matches("-?\\d+")){
                     sendPrefixMessage(p,"§c§lidは整数で指定してください");
                     return true;
@@ -126,7 +127,7 @@ public class Admin implements CommandExecutor {
                     sendPrefixMessage(p,"§c§lそのidの土地は存在しません");
                     return true;
                 }
-                if(args[2] == null || !args[2].equals("confirm")){
+                if(args.length==2 || !args[2].equals("confirm")){
                     sendPrefixMessage(p,"§c§l本当に§d§lid:"+args[1]+"§c§lの土地を削除する場合は、以下のコマンドを実行してください");
                     sendPrefixMessage(p,"§e/realestate.admin delete "+args[1]+" confirm");
                     return true;
@@ -153,7 +154,7 @@ public class Admin implements CommandExecutor {
                             return true;
                         }
                         region.set(args[2] + ".city", args[3]);
-                        if (city.get(args[3]) == null) cityCreate(args[3], city);//都市がなければ自動生成
+                        if (city.get(args[3]) == null) cityCreate(args[3], city, 1000000);//都市がなければ自動生成
                         sendPrefixMessage(p, "§did:" + args[2] + "§aの土地を§6" + args[3] + "§aに所属させました");
                         break;
                         //ここに所属させる処理
@@ -180,7 +181,7 @@ public class Admin implements CommandExecutor {
                             sendPrefixMessage(p,"§6--- 以上 ---");
                         }
                 }
-
+                break;
             case "reload":
                 RealEstate.plugin.reloadConfig();
                 RealEstate.region.reloadConfig();
@@ -193,9 +194,11 @@ public class Admin implements CommandExecutor {
         return true;
     }
 
-    private void cityCreate(String name, FileConfiguration city){
+    private void cityCreate(String name, FileConfiguration city, int defaultPrice){
         city.set(name+".maxUser",4);
         city.set(name+".tax",0);
         city.set(name+".taxType",0);//0:なし, 1:毎日, 2:毎月
+        city.set(name+".defaultPrice", defaultPrice);
+        RealEstate.city.saveConfig();
     }
 }
