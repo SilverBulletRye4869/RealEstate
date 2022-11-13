@@ -2,21 +2,18 @@ package silverassist.realestate;
 
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
+import org.bukkit.*;
+import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Function {
-    public static final String PREFIX = "§b§l[§e§lRealEstate§b§l]§r";
+    public static final String PREFIX = "§b§l[§e§lRealEstate§b§l]";
     public static String ADMIN_WAND = "§d§l領域指定斧";
 
     //---------------------------------------------------------------------------------------------- 保護土地系関数
@@ -114,6 +111,53 @@ public class Function {
         return s.charAt(ActionType.ADMIN.getNum())=='1'||isOwner(p,id);
     }
 
+    //-----------------------------------------------------------------土地購入関数
+    /*****************************
+     * 本当に土地を買うかの確認msg(コマンド自動実行を添えて)
+     * @param p : 対象プレイヤー
+     * @param id : 土地のid
+     * @param lastCheck : 最終確認か否か
+     */
+    public static void sendBuyCheckMessage(Player p,String id,boolean lastCheck){
+        FileConfiguration region = RealEstate.region.getConfig();
+        FileConfiguration config = RealEstate.plugin.getConfig();
+        String color = lastCheck ? "§c§l" : "§f§l";
+
+        sendPrefixMessage(p,"§6§l---------- " + (lastCheck?"最終":"購入") + "確認 ----------");
+        sendPrefixMessage(p,color + "購入予定土地 §d§lid:" + id);
+        sendPrefixMessage(p,color + "値段: §d§l" + region.get(id+".price") + config.get("money_unit"));
+        String owner = region.getString(id+".owner");
+        if(owner.equals("admin"))sendPrefixMessage(p,color + "所有者: §d§l運営");
+        else{
+            String name = Bukkit.getOfflinePlayer(owner).getName();
+            sendPrefixMessage(p, color + "所有者: §d§l"+name);
+        }
+        sendPrefixMessage(p,"§6§l-------------------------------");
+
+        sendRunCommandMessage(p,"§c§l[本当に購入する場合はここをクリック！]","/re buy "+id + (lastCheck ? "　confirm" : ""));
+
+    }
+
+    //------------------------------------------------------------------看板関数
+    private static final Map<String,String> REGION_STATUS = Map.of("sale","販売中","protect","保護中","free","保護なし","frozen","§c§l凍結中");
+    public static void setRegionSign(Sign sign, String id){
+        sign.setLine(0,PREFIX);
+        sign.setLine(1, "§d§lid: "+id);
+        FileConfiguration region = RealEstate.region.getConfig();
+        String owner = region.getString(id+".owner");
+        if(owner.equals("admin"))sign.setLine(2,"§a§l運営");
+        else sign.setLine(2,"§a§l"+Bukkit.getOfflinePlayer(UUID.fromString(owner)).getName());
+        String status = region.getString(id+".status");
+        if(REGION_STATUS.containsKey(status))sign.setLine(3,"§6§l"+REGION_STATUS.get(status));
+
+        Bukkit.getScheduler().runTaskLater(RealEstate.plugin, new Runnable() {
+            @Override
+            public void run() {
+                sign.update(true);
+            }
+        },1);
+    }
+
 
     //-----------------------------------------------------------------一般関数
     //Prefix付きのメッセージに変更
@@ -142,11 +186,20 @@ public class Function {
         return item;
     }
 
+    //サジェストメッセージ送信
     public static void sendSuggestMessage(Player p, String text, String command){
         TextComponent msg = new TextComponent(PREFIX + text);
         msg.setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,command));
         p.spigot().sendMessage(msg);
     }
+
+    //ﾗﾝコマンドメッセージを送信
+    public static void sendRunCommandMessage(Player p, String text, String command){
+        TextComponent msg = new TextComponent(PREFIX + text);
+        msg.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command));
+        p.spigot().sendMessage(msg);
+    }
+
 
 
 }
