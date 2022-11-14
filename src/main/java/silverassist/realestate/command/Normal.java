@@ -55,8 +55,10 @@ public class Normal implements CommandExecutor {
                 }
 
                 economy.withdrawPlayer(p, money);
-                if(!region.getString(id+".owner").equals("admin")){
-                    target = Bukkit.getOfflinePlayer(UUID.fromString(region.getString(id+".owner")));
+
+                OfflinePlayer owner = getOwner(id);
+                if(owner!=null){
+                    target = owner;
                     economy.withdrawPlayer(target,money);
                     if(target.isOnline()){
                         sendPrefixMessage((Player) target,"§d§lid:"+id+"§a§lの土地が購入されました！");
@@ -106,7 +108,7 @@ public class Normal implements CommandExecutor {
                 switch (args[2]){
                     //-----------------------------------------------------------------オーナ権の譲渡
                     case "setowner":
-                        if(args.length<5)return true;
+                        if(args.length<4)return true;
                         if(!isOwner(p,args[1])){
                             sendPrefixMessage(p,"§cあなたはその土地のオーナではありません");
                             return true;
@@ -116,14 +118,14 @@ public class Normal implements CommandExecutor {
                             sendPrefixMessage(p,"§cプレイヤー名が間違っているかオフラインです");
                             return true;
                         }
-                        if(args[4]==null||!args[4].equals("confirm")){
+                        if(args.length==4||!args[4].equals("confirm")){
                             sendPrefixMessage(p,"§c--------【警告】--------");
                             sendPrefixMessage(p,"§6本当にオーナ権限を譲渡する場合は次のコマンドを実行してください");
                             sendPrefixMessage(p,"§c/re manage setowner "+args[1]+" "+ args[3] +" confirm");
                             return true;
                         }
                         region.set(args[1]+".owner",target.getUniqueId().toString());
-                        sendPrefixMessage(p,PREFIX+"§a"+args[3]+"を§did"+args[1]+"§aのオーナーとして登録しました");
+                        sendPrefixMessage(p,"§a"+args[3]+"を§did"+args[1]+"§aのオーナーとして登録しました");
                         break;
                     //------------------------------------------------------------------住人追加
                     case "adduser":
