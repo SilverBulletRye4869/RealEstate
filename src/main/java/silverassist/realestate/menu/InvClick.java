@@ -16,7 +16,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import silverassist.realestate.RealEstate;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 import static silverassist.realestate.menu.InvFunc.*;
@@ -133,6 +132,10 @@ public class InvClick implements Listener {
                                 region.set(id+".status","free");
                                 sendPrefixMessage(p,"§a§l土地の状態を「§c§l保護無効中§a§l」に設定しました");
                                 break;
+                            default:
+                                if(slot<9 || slot>17 || !p.isOp())break;
+                                region.set(id+".status","frozen");
+                                sendPrefixMessage(p,"§a§l土地の状態を「§c§l凍結中§a§l」に設定しました");
                         }
                         break;
                 }

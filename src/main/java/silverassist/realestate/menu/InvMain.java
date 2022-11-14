@@ -26,6 +26,7 @@ public class InvMain {
         Inventory inv = null;
         int slot;
         FileConfiguration region = RealEstate.region.getConfig();
+        FileConfiguration config = RealEstate.plugin.getConfig();
         String id = types.get(0);
 
         switch (types.get(1)){
@@ -45,7 +46,7 @@ public class InvMain {
                         if(isOwner(p,types.get(0))){
                             inv.setItem(4,createItem(Material.GRAY_STAINED_GLASS_PANE,"§r",null));
                             inv.setItem(5,createItem(Material.PAPER,"§b§l土地の状態を設定",List.of("§f土地の状態を設定できます","§6現在の状態: §a§l"+region.getString(id+".status"))));
-                            inv.setItem(6,createItem(Material.GOLD_INGOT,"§6§l土地の値段を設定",List.of("§f土地の値段を設定できます","§6現在の価格: §c§l"+region.getString(id+".price"))));
+                            inv.setItem(6,createItem(Material.GOLD_INGOT,"§6§l土地の値段を設定",List.of("§f土地の値段を設定できます","§6現在の価格: §c§l" + region.getString(id+".price") + config.get("money_unit"))));
                         }
                         break;
                     case "person":
@@ -110,10 +111,11 @@ public class InvMain {
                         break;
 
                     case "status":
-                        inv = createDefaultGui(p,1,"§1§lid:"+id+"のステータス設定");
+                        inv = createDefaultGui(p,p.isOp() ? 2 : 1,"§1§lid:"+id+"のステータス設定");
                         inv = setItemPlus(inv,createItem(Material.GOLD_INGOT,"§c§l販売中にする",List.of("§f土地が売りに出されます。","§6土地が購入されると、オーナー","§6権限が自動的に譲渡されます")),0,1);
                         inv = setItemPlus(inv,createItem(Material.TRIPWIRE_HOOK,"§6§l保護状態にする §a§l(推奨)",List.of("§f土地が保護されます")),3,4,5);
                         inv = setItemPlus(inv,createItem(Material.RED_STAINED_GLASS_PANE,"§6§l保護を無効化する §c§l(非推奨)",List.of("§f全プレイヤーが全行動をする","§fことができます。")),7,8);
+                        if(p.isOp())inv = setItemPlus(inv,createItem(Material.BLUE_ICE, "§c§l凍結する", List.of("§f土地を凍結すると、オーナー","§fも土地を触れなくなります")),9,10,11,12,13,14,15,16,17);
                         break;
                 }
         }
