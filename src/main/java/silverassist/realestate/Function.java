@@ -111,7 +111,7 @@ public class Function {
         return s.charAt(ActionType.ADMIN.getNum())=='1'||isOwner(p,id);
     }
 
-    //-----------------------------------------------------------------土地購入関数
+    //-----------------------------------------------------------------土地関数
     /*****************************
      * 本当に土地を買うかの確認msg(コマンド自動実行を添えて)
      * @param p : 対象プレイヤー
@@ -138,15 +138,26 @@ public class Function {
 
     }
 
+    /******************************************
+     * 土地を凍結させる関数
+     * @param id : 対象の土地
+     */
+    public static void frozenRegion(String id){
+        FileConfiguration region = RealEstate.region.getConfig();
+        region.set(id+".status","frozen");
+        RealEstate.region.saveConfig();
+    }
+
     //------------------------------------------------------------------看板関数
-    private static final Map<String,String> REGION_STATUS = Map.of("sale","販売中","protect","保護中","free","保護なし","frozen","§c§l凍結中");
+    public static final Map<String,String> REGION_STATUS = Map.of("sale","販売中","protect","保護中","free","保護なし","frozen","§c§l凍結中");
     public static void setRegionSign(Sign sign, String id){
         sign.setLine(0,PREFIX);
         sign.setLine(1, "§d§lid: "+id);
         FileConfiguration region = RealEstate.region.getConfig();
-        String owner = region.getString(id+".owner");
-        if(owner.equals("admin"))sign.setLine(2,"§a§l運営");
-        else sign.setLine(2,"§a§l"+Bukkit.getOfflinePlayer(UUID.fromString(owner)).getName());
+
+        OfflinePlayer owner = getOwner(id);
+        if(owner==null)sign.setLine(2,"§a§l運営");
+        else sign.setLine(2,"§a§l"+owner.getName());
         String status = region.getString(id+".status");
         if(REGION_STATUS.containsKey(status))sign.setLine(3,"§6§l"+REGION_STATUS.get(status));
 
@@ -198,6 +209,20 @@ public class Function {
         TextComponent msg = new TextComponent(PREFIX + text);
         msg.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command));
         p.spigot().sendMessage(msg);
+    }
+
+    //オーナー取得
+    public static OfflinePlayer getOwner(String id){
+        FileConfiguration region =  RealEstate.region.getConfig();
+        if(region.get(id)==null)return null;
+        String owner = region.getString(id+".owner");
+        if(owner.equals("admin"))return null;
+        return getPlayer(owner);
+    }
+
+    //プレイヤー取得byString
+    public static OfflinePlayer getPlayer(String uuidStr){
+        return Bukkit.getOfflinePlayer(UUID.fromString(uuidStr));
     }
 
 
