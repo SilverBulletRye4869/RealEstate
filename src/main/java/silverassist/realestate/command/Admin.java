@@ -31,6 +31,8 @@ public class Admin implements CommandExecutor {
         FileConfiguration region = RealEstate.region.getConfig();
         FileConfiguration city = RealEstate.city.getConfig();
         FileConfiguration memo = RealEstate.memo.getConfig();
+        FileConfiguration config = RealEstate.plugin.getConfig();
+
         char[] cood = {'x','z'};
         switch (args[0]){
             //領域指定斧取得
@@ -180,6 +182,23 @@ public class Admin implements CommandExecutor {
                             });
                             sendPrefixMessage(p,"§6--- 以上 ---");
                         }
+                        break;
+                    case "manage":
+                        if(args.length < 5)return true;
+                        if(city.get(args[2])==null){
+                            sendPrefixMessage(p,"§cその都市は見つかりません");
+                            return true;
+                        }
+                        switch (args[3]){
+                            case "setdefaultprice":
+                                city.set(args[2]+".defaultPrice",Integer.parseInt(args[4]));
+                                sendPrefixMessage(p,"§a都市『§d"+args[2]+"§a』のデフォルト価格を§d"+args[4]+config.get("money_unit")+"§aに設定しました");
+                                break;
+                            case "setmaxuser":
+                                city.set(args[2]+".maxUser",Integer.parseInt(args[4]));
+                                sendPrefixMessage(p,"§a都市『§d"+args[2]+"§a』のデフォルト上限人数を§d"+args[4]+"§a人に設定しました");
+                                break;
+                        }
                 }
                 break;
             case "reload":
@@ -196,8 +215,9 @@ public class Admin implements CommandExecutor {
 
     private void cityCreate(String name, FileConfiguration city, int defaultPrice){
         city.set(name+".maxUser",4);
-        city.set(name+".tax",0);
-        city.set(name+".taxType",0);//0:なし, 1:毎日, 2:毎月
+        //いつか実装したい
+        //city.set(name+".tax",0);
+        //city.set(name+".taxType",0);//0:なし, 1:毎日, 2:毎月
         city.set(name+".defaultPrice", defaultPrice);
         RealEstate.city.saveConfig();
     }
