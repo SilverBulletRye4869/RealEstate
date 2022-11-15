@@ -5,7 +5,9 @@ public enum ActionType {
     ALL(1), //With this, you can do everything except manage the land
     BLOCK(2), //With this, you can set up or destroy blocks!
     CLICK(3), //With this, you can access the chest-type block
-    CHEST(4); //With this, you can perform click operations on all blocks except chest-type blocks
+    CHEST(4), //With this, you can perform click operations on all blocks except chest-type blocks
+    PVP(5),
+    PICK_UP(6);
 
     private int num;
     ActionType(int i) {
