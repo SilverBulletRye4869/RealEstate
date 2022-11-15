@@ -25,6 +25,7 @@ public class Normal implements CommandExecutor {
         if(args.length==0)return true;
         FileConfiguration region = RealEstate.region.getConfig();
         FileConfiguration config = RealEstate.plugin.getConfig();
+        FileConfiguration city = RealEstate.city.getConfig();
 
         Location loc;
         OfflinePlayer target;
@@ -95,7 +96,10 @@ public class Normal implements CommandExecutor {
                     sendPrefixMessage(p,"§c指定したidの土地が見つかりません");
                     return true;
                 }
-
+                if(!p.isOp() && region.getString(args[1]+".status").equals("frozen")){
+                    sendPrefixMessage(p,"§cこの土地は凍結されています！");
+                    return true;
+                }
                 if(args.length<3){
                     if(!isAdmin(p,args[1])){
                         sendPrefixMessage(p,"§cあなたはこの土地を管理する権限がありません！");
@@ -132,6 +136,12 @@ public class Normal implements CommandExecutor {
                         if(args.length<4)return true;
                         if(!isAdmin(p,args[1])){
                             sendPrefixMessage(p,"§cあなたはその土地を管理する権限がありません");
+                            return true;
+                        }
+                        String belongCity = region.getString(args[1]+".city");
+                        int max_user = city.getString(belongCity+".maxUser") != null ? city.getInt(belongCity+".maxUser") : config.getInt("default_maxUser");
+                        if(region.get(args[1]+".user")!=null && region.getConfigurationSection(args[1]+".user").getKeys(false).size() >= max_user){
+                            sendPrefixMessage(p,"§cこの土地にはこれ以上プレイヤーを追加することはできません");
                             return true;
                         }
                         target = Bukkit.getPlayer(args[3]);
