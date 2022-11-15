@@ -1,5 +1,6 @@
 package silverassist.realestate.event;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -14,6 +15,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import silverassist.realestate.ActionType;
@@ -39,12 +42,28 @@ public class NormalEvent implements Listener {
     );
 
 
+    //5秒間値を保持しておくことにより軽量化
+    private Map<Player,Map<ActionType,Boolean>> ActionFlag = new HashMap<>();
+    private boolean isAllow(Player p,Location loc, ActionType action){
+        if(ActionFlag.containsKey(p) && ActionFlag.get(p).containsKey(action)) return ActionFlag.get(p).get(action);
+        Boolean allow = hasPermission(p,loc,action);
+        ActionFlag.put(p,new HashMap<>(){{put(action,allow);}});
+        Bukkit.getScheduler().runTaskLater(RealEstate.plugin, new Runnable() {
+            @Override
+            public void run() {
+                ActionFlag.get(p).remove(action);
+            }
+        },100);
+        return allow;
+    }
+
     //-----------------------------------------------------------------------ブロック破壊
     @EventHandler
     public void breakBlock(BlockBreakEvent e){
         Player p = e.getPlayer();
         Block block = e.getBlock();
-        if(hasPermission(p,block.getLocation(), ActionType.BLOCK)) {
+
+        if(isAllow(p,block.getLocation(), ActionType.BLOCK)) {
             if(!(block.getState() instanceof Sign))return;
             Sign sign = (Sign) block.getState();
             if(!sign.getLine(0).contains(PREFIX))return;
@@ -65,7 +84,7 @@ public class NormalEvent implements Listener {
     public void bucketCatch(PlayerBucketEmptyEvent e){
         Player p = e.getPlayer();
         if(p.isOp())return;
-        if(hasPermission(p,e.getBlock().getLocation(),ActionType.BLOCK))return;
+        if(isAllow(p,e.getBlock().getLocation(),ActionType.BLOCK))return;
         sendPrefixMessage(p,"§cこの液体をすくう権限がありません");
         e.setCancelled(true);
     }
@@ -75,7 +94,7 @@ public class NormalEvent implements Listener {
     public void placeBlock(BlockPlaceEvent e) {
         Player p = e.getPlayer();
         if (p.isOp()) return;
-        if (hasPermission(p, e.getBlock().getLocation(), ActionType.BLOCK)) return;
+        if (isAllow(p, e.getBlock().getLocation(), ActionType.BLOCK)) return;
         sendPrefixMessage(p,"§cここにブロックを設置する権限がありません");
         e.setCancelled(true);
     }
@@ -91,14 +110,34 @@ public class NormalEvent implements Listener {
         if(p.isOp())return;
         Block block = e.getClickedBlock();
         if(this.chestBlock.contains(block.getType())) {
-            if (hasPermission(p, block.getLocation(), ActionType.CHEST)) return;
+            if (isAllow(p, block.getLocation(), ActionType.CHEST)) return;
         }else{
-            if (hasPermission(p, block.getLocation(), ActionType.CLICK)) return;
+            if (isAllow(p, block.getLocation(), ActionType.CLICK)) return;
         }
         sendPrefixMessage(p,"§cこのブロックを触る権限がありません");
         e.setCancelled(true);
     }
 
+    //------------------------------------------------------------------------PVP系
+    @EventHandler
+    public void playerAttackEvent(EntityDamageByEntityEvent e){
+        if(!(e.getDamager() instanceof Player && e.getEntity() instanceof  Player))return;
+        Player p = (Player) e.getDamager();
+        if(isAllow(p,p.getLocation(),ActionType.PVP))return;
+        e.setCancelled(true);
+        sendPrefixMessage(p,"§cあなたはここでプレイヤーにダメージを与える権限がありません");
+    }
+
+    //-------------------------------------------------------------------------アイテムpickUp系
+    private Map<Player,Boolean> pickupMessageFlag = new LinkedHashMap<>();
+    @EventHandler
+    public void itemPickUpEvent(EntityPickupItemEvent e){
+        if(!(e.getEntity() instanceof Player))return;
+        Player p = (Player) e.getEntity();
+        if(isAllow(p,p.getLocation(),ActionType.PICK_UP))return;
+        e.setCancelled(true);
+        sendPrefixMessage(p,"§cこのエリアのアイテムを拾う権限がありません");
+    }
 
 
     //-------------------------------------------------------------------土地看板
