@@ -12,8 +12,6 @@ import org.bukkit.entity.Player;
 import silverassist.realestate.menu.InvMain;
 import silverassist.realestate.RealEstate;
 
-import java.util.UUID;
-
 import static silverassist.realestate.Function.*;
 import static silverassist.realestate.RealEstate.vault;
 
@@ -43,7 +41,7 @@ public class Normal implements CommandExecutor {
                     sendPrefixMessage(p,"§c現在この土地を購入することはできません");
                     return true;
                 }
-                int money = region.getInt(id+".price");
+                int money = Integer.valueOf(region.getString(id+".price"));
                 Economy economy = vault.getEconomy();
                 if(economy.getBalance(p) < money){
                     sendPrefixMessage(p,"§c所持金がたりません！");
@@ -51,7 +49,7 @@ public class Normal implements CommandExecutor {
                 }
 
                 if(args.length==2 || !args[2].equals("confirm")){
-                    sendBuyCheckMessage(p,args[1],true);
+                    sendBuyCheckMessage(p,args[1]);
                     return true;
                 }
 
@@ -66,7 +64,8 @@ public class Normal implements CommandExecutor {
                     }
                 }
                 region.set(id+".owner",p.getUniqueId().toString());
-                sendPrefixMessage(p,"§d§lid:"+id+"§a§lの土地を§d§l"+money+ (config.get("money_unit")) +"§a§lで購入しました");
+                region.set(id+".status","protect");
+                sendPrefixMessage(p,"§d§lid:"+id+"§a§lの土地を§d§l"+money+ (config.getString("money_unit")) +"§a§lで購入しました");
                 break;
 
             //------------------------------------------------------土地へのテレポート
@@ -105,7 +104,7 @@ public class Normal implements CommandExecutor {
                         sendPrefixMessage(p,"§cあなたはこの土地を管理する権限がありません！");
                         return true;
                     }
-                    InvMain.openManageGui(p,args[1]+".def");
+                    InvMain.openManageGui(p,"region."+args[1]+".def");
                     break;
                 }
 
@@ -153,7 +152,7 @@ public class Normal implements CommandExecutor {
                             sendPrefixMessage(p,"§cそのプレイヤーは既に登録されています");
                             return true;
                         }
-                        region.set(args[1]+".user."+target.getUniqueId(),0);
+                        region.set(args[1]+".user."+target.getUniqueId(),region.getInt(args[1]+".default"));//土地のデフォルト設定を反映させる
                         sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+args[1]+"§aの土地に登録しました");
                         break;
                     //-------------------------------------------------------------------住人退去
