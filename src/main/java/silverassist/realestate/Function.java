@@ -63,10 +63,16 @@ public class Function {
      * @return : 権限があればtrue, 無ければfalse
      */
     public static boolean hasPermission(Player p, Location loc, ActionType type){
+        if(p.isOp())return true;  //opならかならずtrue
         List<String> list = getGuardList(loc);
         if(list.size()==0){
-            //ない場合はワールドの設定を見るようにする(近日改良)
+            //ない場合はワールドの設定を見るようにする
+            FileConfiguration world = RealEstate.world.getConfig();
+            int permNum = world.getInt(loc.getWorld().getUID()+".permission");
+            String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";
+            return perm.charAt(ActionType.ALL.getNum())=='1';
         }
+
         UUID uuid = p.getUniqueId();
         FileConfiguration region = RealEstate.region.getConfig();
 
@@ -74,7 +80,7 @@ public class Function {
         list.forEach(id -> {
             String status = region.getString(id+".status");
             if(status.equals("free"))return; //フリーな土地ならスルー
-            if(status.equals("frozen") && !p.isOp())allow.set(false); //凍結された土地ならop以外falseにする
+            if(status.equals("frozen"))allow.set(false); //凍結された土地ならfalseにする
 
             int permNum = region.getInt(id+".user."+uuid);
             if(permNum == 0)permNum = region.getInt(id+".default");
@@ -116,25 +122,23 @@ public class Function {
      * 本当に土地を買うかの確認msg(コマンド自動実行を添えて)
      * @param p : 対象プレイヤー
      * @param id : 土地のid
-     * @param lastCheck : 最終確認か否か
      */
-    public static void sendBuyCheckMessage(Player p,String id,boolean lastCheck){
+        public static void sendBuyCheckMessage(Player p,String id){
         FileConfiguration region = RealEstate.region.getConfig();
         FileConfiguration config = RealEstate.plugin.getConfig();
-        String color = lastCheck ? "§c§l" : "§f§l";
 
-        sendPrefixMessage(p,"§6§l---------- " + (lastCheck?"最終":"購入") + "確認 ----------");
-        sendPrefixMessage(p,color + "購入予定土地 §d§lid:" + id);
-        sendPrefixMessage(p,color + "値段: §d§l" + region.get(id+".price") + config.get("money_unit"));
-        String owner = region.getString(id+".owner");
-        if(owner.equals("admin"))sendPrefixMessage(p,color + "所有者: §d§l運営");
+        sendPrefixMessage(p,"§6§l---------- 最終確認 ----------");
+        sendPrefixMessage(p,"§c§l購入予定土地 §d§lid:" + id);
+        sendPrefixMessage(p,"§c§l値段: §d§l" + region.get(id+".price") + config.get("money_unit"));
+        OfflinePlayer owner = getOwner(id);
+        if(owner == null)sendPrefixMessage(p,"§c§l所有者: §d§l運営");
         else{
-            String name = Bukkit.getOfflinePlayer(owner).getName();
-            sendPrefixMessage(p, color + "所有者: §d§l"+name);
+            String name = owner.getName();
+            sendPrefixMessage(p, "§c§l所有者: §d§l"+name);
         }
         sendPrefixMessage(p,"§6§l-------------------------------");
 
-        sendRunCommandMessage(p,"§c§l[本当に購入する場合はここをクリック！]","/re buy "+id + (lastCheck ? "　confirm" : ""));
+        sendRunCommandMessage(p,"§c§l[本当に購入する場合はここをクリック！]","/re buy "+id +" confirm");
 
     }
 
