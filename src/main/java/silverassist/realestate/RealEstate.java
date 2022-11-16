@@ -14,6 +14,7 @@ public final class RealEstate extends JavaPlugin {
     public static CustomConfig region = null;
     public static CustomConfig city = null;
     public static CustomConfig memo = null;
+    public static CustomConfig world =null;
     public static Vault vault = null;
     
     @Override
@@ -29,11 +30,13 @@ public final class RealEstate extends JavaPlugin {
         region = new CustomConfig(this, "regions.yml");
         city = new CustomConfig(this,"city.yml");
         memo = new CustomConfig(this,"memo.yml");
+        world = new CustomConfig(this,"world.yml");
 
         this.saveDefaultConfig();
         region.saveDefaultConfig();
         city.saveDefaultConfig();
         memo.saveDefaultConfig();
+        world.saveDefaultConfig();
 
         PluginCommand command = getCommand("realestate");
         if(command!=null)command.setExecutor(new Normal());
@@ -55,5 +58,6 @@ public final class RealEstate extends JavaPlugin {
         if(region!=null)region.saveConfig();
         if(city!=null)city.saveConfig();
         if(memo!=null)memo.saveConfig();
+        if(world!=null)world.saveConfig();
     }
 }
