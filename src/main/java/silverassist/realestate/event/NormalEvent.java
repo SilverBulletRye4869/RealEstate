@@ -3,7 +3,6 @@ package silverassist.realestate.event;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
@@ -45,6 +44,11 @@ public class NormalEvent implements Listener {
     //5秒間値を保持しておくことにより軽量化
     private Map<Player,Map<ActionType,Boolean>> ActionFlag = new HashMap<>();
     private boolean isAllow(Player p,Location loc, ActionType action){
+        FileConfiguration world =RealEstate.world.getConfig();
+        String worldUUID = loc.getWorld().getUID().toString();
+        if(world.get(worldUUID)==null)return true; //ワールドについて記載がなければ許可
+        if(!world.getBoolean(worldUUID+".enabled"))return true; //保護が有効化されてなければ許可
+
         if(ActionFlag.containsKey(p) && ActionFlag.get(p).containsKey(action)) return ActionFlag.get(p).get(action);
         Boolean allow = hasPermission(p,loc,action);
         ActionFlag.put(p,new HashMap<>(){{put(action,allow);}});
@@ -153,7 +157,7 @@ public class NormalEvent implements Listener {
 
         FileConfiguration region = RealEstate.region.getConfig();
         if(region.get(id)==null)return;
-        List<Location> locList = new ArrayList<>((List<Location>)region.getList(id + ".sign"));
+        List<Location> locList = (region.get(id + ".sign") != null) ? (List<Location>)region.getList(id + ".sign") : new ArrayList<>();
 
         //看板が無いのに残っているか確認
         new ArrayList<>(locList).forEach(loc -> { //new ArrayListしないとエラー吐く！
@@ -190,8 +194,7 @@ public class NormalEvent implements Listener {
         FileConfiguration region = RealEstate.region.getConfig();
         if(region.get(id)==null)return;
 
-        sendPrefixMessage(p,"§e§l-------[id:"+id+"の情報]-------");
-        OfflinePlayer owner = getOwner(id);
+        sendPrefixMessage(p,"§e§l--------------[id:"+id+"の情報]--------------");
         sendPrefixMessage(p,"§6§l所有者: "+lines[2]);
         sendPrefixMessage(p,"§6§lステータス: §a§l"+lines[3]);
         sendPrefixMessage(p,"§6§l価格: §a§l"+region.get(id+".price")+RealEstate.plugin.getConfig().get("money_unit"));
@@ -208,5 +211,8 @@ public class NormalEvent implements Listener {
             }
         }
         sendPrefixMessage(p,"§e§l--------------------------------------");
+        if(region.getString(id+".status").equals("sale")){
+            sendRunCommandMessage(p,"§c§l[この土地を買う！]","/re buy "+id);
+        }
     }
 }
