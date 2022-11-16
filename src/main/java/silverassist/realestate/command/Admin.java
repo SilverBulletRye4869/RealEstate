@@ -1,5 +1,6 @@
 package silverassist.realestate.command;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -9,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import silverassist.realestate.RealEstate;
+import silverassist.realestate.menu.InvMain;
 
 import java.util.*;
 
@@ -35,7 +37,7 @@ public class Admin implements CommandExecutor {
 
         char[] cood = {'x','z'};
         switch (args[0]){
-            //領域指定斧取得
+            //----------------------------------------------------------------------------------------領域指定斧取得
             case "wand":
                 item = new ItemStack(Material.DIAMOND_AXE);
                 meta = item.getItemMeta();
@@ -45,7 +47,7 @@ public class Admin implements CommandExecutor {
                 item.setItemMeta(meta);
                 p.getInventory().addItem(item);
                 break;
-            //領域登録
+            //----------------------------------------------------------------------------------------領域登録
             case "register":
                 if(args.length<2)return true;
                 if(!isInt(args[1])){
@@ -107,7 +109,7 @@ public class Admin implements CommandExecutor {
                 region.set(args[1]+".home",p.getLocation());
                 region.set(args[1]+".default",0);
                 region.set(args[1]+".status","protect");
-                region.set(args[1]+".sign", new HashSet<>());
+                region.set(args[1]+".sign", new ArrayList<>());
                 sendPrefixMessage(p,"§a指定した保護を§d§lid"+args[1]+"§a§lで登録しました");
                 p.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
                 if(args.length<3)region.set(args[1]+".city","");
@@ -119,6 +121,7 @@ public class Admin implements CommandExecutor {
                 }
                 break;
 
+            //--------------------------------------------------------------------------------------------------領域削除
             case "delete":
                 if(args.length==1)return true;
                 if(!args[1].matches("-?\\d+")){
@@ -145,7 +148,7 @@ public class Admin implements CommandExecutor {
                 sendPrefixMessage(p,"§6§lid:"+args[1]+"§c§lの土地を削除しました");
                 break;
 
-
+            //--------------------------------------------------------------------------------------------------都市管理
             case "city":
                 if(args.length<2)return true;
                 switch (args[1]) {
@@ -201,10 +204,35 @@ public class Admin implements CommandExecutor {
                         }
                 }
                 break;
+
+            //-------------------------------------------------------------------------------------------------------ワールド管理
+            case "world":
+                if(args.length==1)return true;
+                switch (args[1]){
+                    case "manage":
+                        if(args.length==2)return true;
+                        if(Bukkit.getWorld(args[2]) == null){
+                            sendPrefixMessage(p, "§cワールドが見つかりません！");
+                            return true;
+                        }
+                        InvMain.openManageGui(p,"world."+args[2]+".def");
+
+                    case "list":
+                        sendPrefixMessage(p,"§e-----------[ワールド一覧]-----------");
+                        Bukkit.getWorlds().forEach(world -> sendRunCommandMessage(p,"§a§lName: §d§l"+world.getName(),"/re.a world manage "+world.getName()));
+                        sendPrefixMessage(p,"§e---------------------------------");
+                        break;
+                }
+                break;
+
+
+            //--------------------------------------------------------------------------------------------------yml再読み込み
             case "reload":
                 RealEstate.plugin.reloadConfig();
                 RealEstate.region.reloadConfig();
                 RealEstate.city.reloadConfig();
+                RealEstate.memo.reloadConfig();
+                RealEstate.world.reloadConfig();
 
         }
         RealEstate.region.saveConfig();
