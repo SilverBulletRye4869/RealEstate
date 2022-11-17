@@ -57,7 +57,7 @@ public class NormalEvent implements Listener {
             public void run() {
                 ActionFlag.get(p).remove(action);
             }
-        },100);
+        },20 * RealEstate.plugin.getConfig().getInt("permission_save_time"));
         return allow;
     }
 
