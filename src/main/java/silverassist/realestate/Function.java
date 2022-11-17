@@ -3,11 +3,14 @@ package silverassist.realestate;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.*;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -171,6 +174,28 @@ public class Function {
                 sign.update(true);
             }
         },1);
+    }
+    public static void editRegionSign(String id){
+        FileConfiguration region = RealEstate.region.getConfig();
+        if(region.get(id)==null)return;
+        List<Location> signLocationList = (List<Location>) region.getList(id+".sign");
+
+        new ArrayList<>(signLocationList).forEach(signLocation -> {
+                Block block = signLocation.getBlock();
+                if(block !=null){
+                    BlockState state = block.getState();
+                    if(state instanceof Sign){
+                        Sign sign = (Sign) state;
+                        if(sign.getLine(0).equals(PREFIX)){
+                            setRegionSign(sign, id);
+                            return;
+                        }
+                    }
+                }
+                signLocationList.remove(signLocation);
+        });
+        region.set(id+".sign",signLocationList);
+        RealEstate.region.saveConfig();
     }
 
 
