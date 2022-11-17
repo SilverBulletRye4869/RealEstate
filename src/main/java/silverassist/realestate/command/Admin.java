@@ -1,7 +1,11 @@
 package silverassist.realestate.command;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -134,7 +138,8 @@ public class Admin implements CommandExecutor {
                 }
                 if(args.length==2 || !args[2].equals("confirm")){
                     sendPrefixMessage(p,"§c§l本当に§d§lid:"+args[1]+"§c§lの土地を削除する場合は、以下のコマンドを実行してください");
-                    sendPrefixMessage(p,"§e/realestate.admin delete "+args[1]+" confirm");
+                    sendPrefixMessage(p,"§e§l/realestate.admin delete "+args[1]+" confirm");
+                    sendSuggestMessage(p,"§d§l[ここをクリックして一部自動入力]","/realestate.admin delete "+args[1]);
                     return true;
                 }
                 for(int i = 0;i<2;i++) {
@@ -144,6 +149,15 @@ public class Admin implements CommandExecutor {
                         memo.set(cood[i]+String.valueOf(j), list);
                     }
                 }
+                List<Location> signLocationList = (List<Location>) region.getList(args[1]+".sign");
+                signLocationList.forEach(signLocation -> {
+                    Block block = signLocation.getBlock();
+                    if(block==null || block.getState()==null)return;
+                    BlockState state = block.getState();
+                    if(!(state instanceof Sign))return;
+                    for(int i=0;i<4;i++)((Sign)state).setLine(i,"");
+                    state.update();
+                });
                 region.set(args[1],null);
                 sendPrefixMessage(p,"§6§lid:"+args[1]+"§c§lの土地を削除しました");
                 break;
@@ -235,6 +249,7 @@ public class Admin implements CommandExecutor {
                 RealEstate.world.reloadConfig();
 
         }
+
         RealEstate.region.saveConfig();
         RealEstate.city.saveConfig();
         RealEstate.memo.saveConfig();
