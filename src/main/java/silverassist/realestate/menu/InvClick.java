@@ -174,7 +174,7 @@ public class InvClick implements Listener {
                 RealEstate.world.saveConfig();
                 break;
         }
-
+        editRegionSign(id);
         if(!CloseCancel)p.closeInventory();
         if(nextInv!=null)openManageGui(p,nextInv);
     }
