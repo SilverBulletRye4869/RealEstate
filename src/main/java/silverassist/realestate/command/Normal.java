@@ -20,18 +20,17 @@ public class Normal implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(!(sender instanceof Player))return true;
         Player p = (Player) sender;
-        if(args.length==0)return true;
+        if(args.length<2)return true;
         FileConfiguration region = RealEstate.region.getConfig();
         FileConfiguration config = RealEstate.plugin.getConfig();
         FileConfiguration city = RealEstate.city.getConfig();
 
         Location loc;
         OfflinePlayer target;
+        String id = args[1];
         switch (args[0]){
             case "buy":
-                if(args.length==1)return true;
-                if(!isInt(args[1]))return true;
-                String id = args[1];
+                if(!isInt(id))return true;
 
                 if(region.get(id)==null){
                     sendPrefixMessage(p,"§c土地が存在しません！");
@@ -49,7 +48,7 @@ public class Normal implements CommandExecutor {
                 }
 
                 if(args.length==2 || !args[2].equals("confirm")){
-                    sendBuyCheckMessage(p,args[1]);
+                    sendBuyCheckMessage(p,id);
                     return true;
                 }
 
@@ -75,8 +74,7 @@ public class Normal implements CommandExecutor {
                     sendPrefixMessage(p,"§cあなたは土地にテレポートする権限がありません");
                     return true;
                 }
-                if(args.length<1)return true;
-                if(!isInt(args[1])){
+                if(!isInt(id)){
                     sendPrefixMessage(p,"§c土地のidは自然数で入力してください");
                     return true;
                 }
@@ -87,24 +85,23 @@ public class Normal implements CommandExecutor {
                 //近日改良予定
                 break;
             case "manage":
-                if(args.length<2)return true;
-                else if(!isInt(args[1])){
+                if(!isInt(id)){
                     sendPrefixMessage(p,"§c土地のidは整数で入力してください");
                     return true;
-                }else if((region.get(args[1])==null)){
+                }else if((region.get(id)==null)){
                     sendPrefixMessage(p,"§c指定したidの土地が見つかりません");
                     return true;
                 }
-                if(!p.isOp() && region.getString(args[1]+".status").equals("frozen")){
+                if(!p.isOp() && region.getString(id+".status").equals("frozen")){
                     sendPrefixMessage(p,"§cこの土地は凍結されています！");
                     return true;
                 }
                 if(args.length<3){
-                    if(!isAdmin(p,args[1])){
+                    if(!isAdmin(p,id)){
                         sendPrefixMessage(p,"§cあなたはこの土地を管理する権限がありません！");
                         return true;
                     }
-                    InvMain.openManageGui(p,"region."+args[1]+".def");
+                    InvMain.openManageGui(p,"region."+id+".def");
                     break;
                 }
 
@@ -112,7 +109,7 @@ public class Normal implements CommandExecutor {
                     //-----------------------------------------------------------------オーナ権の譲渡
                     case "setowner":
                         if(args.length<4)return true;
-                        if(!isOwner(p,args[1])){
+                        if(!isOwner(p,id)){
                             sendPrefixMessage(p,"§cあなたはその土地のオーナではありません");
                             return true;
                         }
@@ -122,24 +119,25 @@ public class Normal implements CommandExecutor {
                             return true;
                         }
                         if(args.length==4||!args[4].equals("confirm")){
-                            sendPrefixMessage(p,"§c--------【警告】--------");
+                            sendPrefixMessage(p,"§c------------------【警告】------------------");
                             sendPrefixMessage(p,"§6本当にオーナ権限を譲渡する場合は次のコマンドを実行してください");
-                            sendPrefixMessage(p,"§c/re manage setowner "+args[1]+" "+ args[3] +" confirm");
+                            sendPrefixMessage(p,"§c/re manage "+id+" setowner "+ args[3] +" confirm");
+                            sendSuggestMessage(p,"§d§l[ここをクリックして一部自動入力]","/re manage "+id+" setowner"+ args[3]);
                             return true;
                         }
-                        region.set(args[1]+".owner",target.getUniqueId().toString());
-                        sendPrefixMessage(p,"§a"+args[3]+"を§did"+args[1]+"§aのオーナーとして登録しました");
+                        region.set(id+".owner",target.getUniqueId().toString());
+                        sendPrefixMessage(p,"§a"+args[3]+"を§did"+id+"§aのオーナーとして登録しました");
                         break;
                     //------------------------------------------------------------------住人追加
                     case "adduser":
                         if(args.length<4)return true;
-                        if(!isAdmin(p,args[1])){
+                        if(!isAdmin(p,id)){
                             sendPrefixMessage(p,"§cあなたはその土地を管理する権限がありません");
                             return true;
                         }
-                        String belongCity = region.getString(args[1]+".city");
+                        String belongCity = region.getString(id+".city");
                         int max_user = city.getString(belongCity+".maxUser") != null ? city.getInt(belongCity+".maxUser") : config.getInt("default_maxUser");
-                        if(region.get(args[1]+".user")!=null && region.getConfigurationSection(args[1]+".user").getKeys(false).size() >= max_user){
+                        if(region.get(id+".user")!=null && region.getConfigurationSection(id+".user").getKeys(false).size() >= max_user){
                             sendPrefixMessage(p,"§cこの土地にはこれ以上プレイヤーを追加することはできません");
                             return true;
                         }
@@ -148,42 +146,42 @@ public class Normal implements CommandExecutor {
                             sendPrefixMessage(p,"§cプレイヤー名が間違っているかオフラインです");
                             return true;
                         }
-                        if(region.getInt(args[1]+".user."+target.getUniqueId()) !=0){
+                        if(region.getInt(id+".user."+target.getUniqueId()) !=0){
                             sendPrefixMessage(p,"§cそのプレイヤーは既に登録されています");
                             return true;
                         }
-                        region.set(args[1]+".user."+target.getUniqueId(),region.getInt(args[1]+".default"));//土地のデフォルト設定を反映させる
-                        sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+args[1]+"§aの土地に登録しました");
+                        region.set(id+".user."+target.getUniqueId(),region.getInt(id+".default"));//土地のデフォルト設定を反映させる
+                        sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+id+"§aの土地に登録しました");
                         break;
                     //-------------------------------------------------------------------住人退去
                     case "removeuser":
                         if(args.length<4)return true;
-                        if(!isAdmin(p,args[1])){
+                        if(!isAdmin(p,id)){
                             sendPrefixMessage(p,"§cあなたはその土地を管理する権限がありません");
                             return true;
                         }
                         target = Bukkit.getOfflinePlayer(args[3]);
-                        if(!region.getConfigurationSection(args[1]+".user").getKeys(false).contains(target.getUniqueId().toString())){
+                        if(!region.getConfigurationSection(id+".user").getKeys(false).contains(target.getUniqueId().toString())){
                             sendPrefixMessage(p,"§cその人は入居していません");
                             return true;
                         }
-                        if(!isOwner(p,args[1])&&isAdmin(target,args[1])){
+                        if(!isOwner(p,id)&&isAdmin(target,id)){
                             sendPrefixMessage(p,"§cあなたはこの人を退去させることはできません");
                             return true;
                         }
-                        region.set(args[1]+".user."+target.getUniqueId(),null);
-                        sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+args[1]+"§aの土地から削除しました");
+                        region.set(id+".user."+target.getUniqueId(),null);
+                        sendPrefixMessage(p,"§a"+target.getName()+"を§did:"+id+"§aの土地から削除しました");
                         break;
 
                     //-------------------------------------------------------------------権限設定
                     case "setpermission":
                         if(args.length<5)return true;
-                        if(!isAdmin(p,args[1])){
+                        if(!isAdmin(p,id)){
                             sendPrefixMessage(p,"§cあなたはその土地を管理する権限がありません");
                             return true;
                         }
                         target = Bukkit.getOfflinePlayer(args[3]);
-                        if(region.getString(args[1]+".user."+target.getUniqueId())==null){
+                        if(region.getString(id+".user."+target.getUniqueId())==null){
                             sendPrefixMessage(p,"§cそのプレイヤーは住人として登録されていません");
                             return true;
                         }
@@ -192,7 +190,7 @@ public class Normal implements CommandExecutor {
                             return true;
                         }
                         int perm = Integer.parseInt(args[4]);
-                        if(perm%2==1 && !isOwner(p,args[1])){
+                        if(perm%2==1 && !isOwner(p,id)){
                             sendPrefixMessage(p,"§cあなたはこのパーミッション値にする権限がありません");
                             return true;
                         }
@@ -203,7 +201,7 @@ public class Normal implements CommandExecutor {
                     //----------------------------------------------------------------------値段設定
                     case "setprice":
                         if(args.length<4)return true;
-                        if(!isOwner(p,args[1])){
+                        if(!isOwner(p,id)){
                             sendPrefixMessage(p,"§cこの土地の値段を設定する権限がありません");
                             return true;
                         }
@@ -217,12 +215,13 @@ public class Normal implements CommandExecutor {
                             return true;
                         }
                         region.set(args[1]+".price",args[3]);
-                        sendPrefixMessage(p,"§aid:"+args[1]+"の土地の値段を§d"+args[3]+"§aに設定しました");
+                        sendPrefixMessage(p,"§aid:"+id+"の土地の値段を§d"+args[3]+"§aに設定しました");
                         break;
 
                 }
         }
         RealEstate.region.saveConfig();
+        editRegionSign(id);
         return true;
     }
 
