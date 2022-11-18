@@ -16,8 +16,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Function {
-    public static final String PREFIX = "§b§l[§e§lRealEstate§b§l]";
-    public static String ADMIN_WAND = "§d§l領域指定斧";
+    public static final String PREFIX = "§b§l[§e§lRealEstate§b§l]";  //prefix
+    public static String ADMIN_WAND = "§d§l領域指定斧";  //領域指定斧のName
 
     //---------------------------------------------------------------------------------------------- 保護土地系関数
     /*****************************************************************
@@ -29,11 +29,11 @@ public class Function {
      * @return : 範囲内にあればtrue, そうでなければfalse
      */
     public static boolean areaCheck(Location loc, List<Float> s, List<Float> e, String w){
-        if(!loc.getWorld().getName().equals(w))return false;
-        if(loc.getX() < s.get(0) || loc.getX()>e.get(0))return false;
-        if(loc.getZ() < s.get(2) || loc.getZ()>e.get(2))return false;
-        if(loc.getY() < s.get(1) || loc.getY()>e.get(1))return false;
-        return true;
+        if(!loc.getWorld().getName().equals(w))return false;  //ワールドが異なればfalseを返す
+        if(loc.getX() < s.get(0) || loc.getX()>e.get(0))return false;  //xが範囲外ならfalseを返す
+        if(loc.getZ() < s.get(2) || loc.getZ()>e.get(2))return false;  //yが範囲外ならfalseを返す
+        if(loc.getY() < s.get(1) || loc.getY()>e.get(1))return false;  //が範囲外ならfalseを返す
+        return true; //全部範囲内ならtrueを返す
     }
 
 
@@ -43,16 +43,16 @@ public class Function {
      * @return : 属している保護の一覧
      */
     private static List<String> getGuardList(Location loc){
-        FileConfiguration region = RealEstate.region.getConfig();
-        FileConfiguration memo = RealEstate.memo.getConfig();
-        List<String> guardList = new LinkedList<>();
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();  //土地のデータ
+        FileConfiguration memo = RealEstate.getMemoYml().getConfig();  //memoデータ
+        List<String> guardList = new LinkedList<>();  //その位置に属している土地のリストを格納しておく奴
 
         //オーダを一番気おつけないといけないところ!
-        List<String> x = memo.getStringList("x"+Math.round(loc.getX()/100));
-        memo.getStringList("z"+Math.round(loc.getZ()/100)).forEach(path ->{
-            if(!x.contains(path))return;
-            if(!areaCheck(loc, region.getFloatList(path+".start"),region.getFloatList(path+".end"),region.getString(path+".world")))return;
-            guardList.add(path);
+        List<String> x = memo.getStringList("x"+Math.round(loc.getX()/100));  //x座標とmemoから可能性のある土地一覧を取得
+        memo.getStringList("z"+Math.round(loc.getZ()/100)).forEach(path ->{  //z座標とmemoから可能性のある土地一覧を取得してそれぞれに対して実行
+            if(!x.contains(path))return;  //xのリストと照合してなければ終了
+            if(!areaCheck(loc, region.getFloatList(path+".start"),region.getFloatList(path+".end"),region.getString(path+".world")))return;  //可能性があれば詳細探索
+            guardList.add(path);  //属していればリストに加える
         });
         return guardList;
     }
@@ -67,30 +67,33 @@ public class Function {
      */
     public static boolean hasPermission(Player p, Location loc, ActionType type){
         if(p.isOp())return true;  //opならかならずtrue
-        List<String> list = getGuardList(loc);
-        if(list.size()==0){
-            //ない場合はワールドの設定を見るようにする
-            FileConfiguration world = RealEstate.world.getConfig();
-            int permNum = world.getInt(loc.getWorld().getUID()+".permission");
-            String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";
-            return perm.charAt(ActionType.ALL.getNum())=='1';
+        List<String> list = getGuardList(loc);  //位置から属する保護のリストを取得
+
+        if(list.size()==0){//ない場合はワールドの設定を見るようにする
+            FileConfiguration world = RealEstate.getWorldYml().getConfig();  //worldYmlを読み込み
+            int permNum = world.getInt(loc.getWorld().getUID()+".permission");  //そのワールドのパーミッション値を取得
+            String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";  //2進数に分解
+            return perm.charAt(ActionType.ALL.getNum())=='1';  //分解したものの権限に対応している場所を見て判断(1:権限あり, 0:権限なし)
         }
 
-        UUID uuid = p.getUniqueId();
-        FileConfiguration region = RealEstate.region.getConfig();
+        UUID uuid = p.getUniqueId();  //uuid取得
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();  //土地のyml取得
 
-        AtomicBoolean allow = new AtomicBoolean(true);
+        AtomicBoolean allow = new AtomicBoolean(true);  //デフォルトをtrueとして処理
+        //属するすべての保護に対して実施
         list.forEach(id -> {
-            String status = region.getString(id+".status");
+            String status = region.getString(id+".status");  //その土地のステータスを取得
             if(status.equals("free"))return; //フリーな土地ならスルー
             if(status.equals("frozen"))allow.set(false); //凍結された土地ならfalseにする
 
-            int permNum = region.getInt(id+".user."+uuid);
-            if(permNum == 0)permNum = region.getInt(id+".default");
-            String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";
-            if(isAdmin(p,id)||perm.charAt(ActionType.ALL.getNum())=='1')return; //管理権限orフル活動権限があればスルー
+            int permNum = region.getInt(id+".user."+uuid);  //idとuuidからそのプレイヤーのパーミッション値を取得
+            if(permNum == 0)permNum = region.getInt(id+".default");  //プレイヤーが見つからない　あるいは　全拒否　ならその土地のデフォルトの権限を取得
+            String perm = new StringBuilder(Integer.toBinaryString(permNum)).reverse() + "0000000000";  //パーミッション値を2進数に分解
+            if(isAdmin(p,id)||perm.charAt(ActionType.ALL.getNum())=='1')return; //2進数の対応する場所を見て、管理権限orフル活動権限があればスルー
             if(perm.charAt(type.getNum())=='0') allow.set(false); //各行動の権限がなければfalseにする
         });
+
+        //属するすべての土地で許可されている場合にのみtrueを返す
         return allow.get();
     }
 
@@ -102,10 +105,10 @@ public class Function {
      * @return : Ownerであればtrue, そうでないならfalse
      */
     public static boolean isOwner(OfflinePlayer p, String id){
-        if(p.isOp())return true;
-        String owner = RealEstate.region.getConfig().getString(id+".owner");
-        if(owner.equals("admin"))return false;
-        return RealEstate.region.getConfig().get(id+".owner").equals(p.getUniqueId().toString());
+        if(p.isOp())return true;  //opならtrue
+        String owner = RealEstate.getRegionYml().getConfig().getString(id+".owner");  //ownerのuuidを取得
+        if(owner.equals("admin"))return false;  //ownerが運営ならfalseを返す
+        return RealEstate.getRegionYml().getConfig().get(id+".owner").equals(p.getUniqueId().toString());  //対象プレイヤーのuuidとownerのuuidを比較
     }
 
 
@@ -116,23 +119,25 @@ public class Function {
      * @return : Adminであればtrue, そうでなければfalse
      */
     public static boolean isAdmin(OfflinePlayer p, String id){
-        String s = new StringBuilder(Integer.toBinaryString(RealEstate.region.getConfig().getInt(id+".user."+p.getUniqueId()))).reverse() + "0000000000";
-        return s.charAt(ActionType.ADMIN.getNum())=='1'||isOwner(p,id);
+        int permNum = RealEstate.getRegionYml().getConfig().getInt(id+".user."+p.getUniqueId());  //対象プレイヤーのパーミッション値を取得
+        return permNum%2==1||isOwner(p,id);  //パーミッション値から管理権限があるか判断する　（owner判定の場合もtrueを返す）
     }
 
-    //-----------------------------------------------------------------土地関数
+    //---------------------------------------------------------------------------------------------------------土地関数
     /*****************************
      * 本当に土地を買うかの確認msg(コマンド自動実行を添えて)
      * @param p : 対象プレイヤー
      * @param id : 土地のid
      */
         public static void sendBuyCheckMessage(Player p,String id){
-        FileConfiguration region = RealEstate.region.getConfig();
-        FileConfiguration config = RealEstate.plugin.getConfig();
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();
+        FileConfiguration config = RealEstate.getInstance().getConfig();
 
+        //================================================================メッセージ送信
         sendPrefixMessage(p,"§6§l---------- 最終確認 ----------");
         sendPrefixMessage(p,"§c§l購入予定土地 §d§lid:" + id);
         sendPrefixMessage(p,"§c§l値段: §d§l" + region.get(id+".price") + config.get("money_unit"));
+        //Ownerの情報エリア
         OfflinePlayer owner = getOwner(id);
         if(owner == null)sendPrefixMessage(p,"§c§l所有者: §d§l運営");
         else{
@@ -141,7 +146,8 @@ public class Function {
         }
         sendPrefixMessage(p,"§6§l-------------------------------");
 
-        sendRunCommandMessage(p,"§c§l[本当に購入する場合はここをクリック！]","/re buy "+id +" confirm");
+
+        sendRunCommandMessage(p,"§c§l[本当に購入する場合はここをクリック！]","/re buy "+id +" confirm");  //ﾗﾝコマンドメッセージ送信
 
     }
 
@@ -150,52 +156,65 @@ public class Function {
      * @param id : 対象の土地
      */
     public static void frozenRegion(String id){
-        FileConfiguration region = RealEstate.region.getConfig();
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();  //土地のyml取得
         region.set(id+".status","frozen");
-        RealEstate.region.saveConfig();
+        RealEstate.getRegionYml().saveConfig();
     }
 
-    //------------------------------------------------------------------看板関数
+    //--------------------------------------------------------------------------------------------------看板関数
     public static final Map<String,String> REGION_STATUS = Map.of("sale","販売中","protect","保護中","free","保護なし","frozen","§c§l凍結中");
+
+    /******************************************************
+     * 看板に土地の情報を書き込む
+     * @param sign : 対象看板のステータス
+     * @param id : 土地のid
+     */
     public static void setRegionSign(Sign sign, String id){
         sign.setLine(0,PREFIX);
         sign.setLine(1, "§d§lid: "+id);
-        FileConfiguration region = RealEstate.region.getConfig();
-
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();  //土地のyml取得
+        //Ownerエリア
         OfflinePlayer owner = getOwner(id);
         if(owner==null)sign.setLine(2,"§a§l運営");
         else sign.setLine(2,"§a§l"+owner.getName());
         String status = region.getString(id+".status");
-        if(REGION_STATUS.containsKey(status))sign.setLine(3,"§6§l"+REGION_STATUS.get(status));
+        if(REGION_STATUS.containsKey(status))sign.setLine(3,"§6§l"+REGION_STATUS.get(status));  //土地の状態を変換し記入
 
-        Bukkit.getScheduler().runTaskLater(RealEstate.plugin, new Runnable() {
+        //遅延がないと、看板設置時に反映されない時アリ
+        Bukkit.getScheduler().runTaskLater(RealEstate.getInstance(), new Runnable() {
             @Override
             public void run() {
                 sign.update(true);
             }
         },1);
     }
-    public static void editRegionSign(String id){
-        FileConfiguration region = RealEstate.region.getConfig();
-        if(region.get(id)==null)return;
-        List<Location> signLocationList = (List<Location>) region.getList(id+".sign");
 
+    /**************************************
+     * 指定したidの土地看板を全編集
+     * @param id : 対象の土地
+     */
+    public static void editRegionSign(String id){
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();
+        if(region.get(id)==null)return;  //土地が見つからなければfalse
+        List<Location> signLocationList = (List<Location>) region.getList(id+".sign ");  //看板の位置リストを取得
+
+        //看板の位置リストをコピーして全実行
         new ArrayList<>(signLocationList).forEach(signLocation -> {
                 Block block = signLocation.getBlock();
-                if(block !=null){
+                if(block !=null){  //blockがあるか
                     BlockState state = block.getState();
-                    if(state instanceof Sign){
+                    if(state instanceof Sign){  //blockが看板であるか
                         Sign sign = (Sign) state;
-                        if(sign.getLine(0).equals(PREFIX)){
-                            setRegionSign(sign, id);
+                        if(sign.getLine(0).equals(PREFIX)){  //土地看板であるか？
+                            setRegionSign(sign, id);  //土地看板なら編集関数に飛ばす
                             return;
                         }
                     }
                 }
-                signLocationList.remove(signLocation);
+                signLocationList.remove(signLocation);  //土地看板じゃなければ土地看板リストから削除
         });
-        region.set(id+".sign",signLocationList);
-        RealEstate.region.saveConfig();
+        region.set(id+".sign",signLocationList);  //土地看板リストを更新
+        RealEstate.getRegionYml().saveConfig();
     }
 
 
@@ -207,7 +226,7 @@ public class Function {
 
     //全体メッセージ
     public static void broadCast(String msg){
-        RealEstate.plugin.getServer().broadcastMessage(PREFIX+msg);
+        RealEstate.getInstance().getServer().broadcastMessage(PREFIX+msg);
     }
 
     //整数かどうか判定
@@ -242,7 +261,7 @@ public class Function {
 
     //オーナー取得
     public static OfflinePlayer getOwner(String id){
-        FileConfiguration region =  RealEstate.region.getConfig();
+        FileConfiguration region =  RealEstate.getRegionYml().getConfig();
         if(region.get(id)==null)return null;
         String owner = region.getString(id+".owner");
         if(owner.equals("admin"))return null;
