@@ -18,6 +18,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.plugin.java.JavaPlugin;
 import silverassist.realestate.ActionType;
 import silverassist.realestate.RealEstate;
 
@@ -44,7 +45,7 @@ public class NormalEvent implements Listener {
     //5秒間値を保持しておくことにより軽量化
     private Map<Player,Map<ActionType,Boolean>> ActionFlag = new HashMap<>();
     private boolean isAllow(Player p,Location loc, ActionType action){
-        FileConfiguration world =RealEstate.world.getConfig();
+        FileConfiguration world =RealEstate.getWorldYml().getConfig();
         String worldUUID = loc.getWorld().getUID().toString();
         if(world.get(worldUUID)==null)return true; //ワールドについて記載がなければ許可
         if(!world.getBoolean(worldUUID+".enabled"))return true; //保護が有効化されてなければ許可
@@ -52,12 +53,13 @@ public class NormalEvent implements Listener {
         if(ActionFlag.containsKey(p) && ActionFlag.get(p).containsKey(action)) return ActionFlag.get(p).get(action);
         Boolean allow = hasPermission(p,loc,action);
         ActionFlag.put(p,new HashMap<>(){{put(action,allow);}});
-        Bukkit.getScheduler().runTaskLater(RealEstate.plugin, new Runnable() {
+        JavaPlugin plugin = RealEstate.getInstance();
+        Bukkit.getScheduler().runTaskLater(plugin, new Runnable() {
             @Override
             public void run() {
                 ActionFlag.get(p).remove(action);
             }
-        },20 * RealEstate.plugin.getConfig().getInt("permission_save_time"));
+        },20 * plugin.getConfig().getInt("permission_save_time"));
         return allow;
     }
 
@@ -72,12 +74,12 @@ public class NormalEvent implements Listener {
             Sign sign = (Sign) block.getState();
             if(!sign.getLine(0).contains(PREFIX))return;
             String id = sign.getLine(1).replace("§d§lid: ","");
-            FileConfiguration region = RealEstate.region.getConfig();
+            FileConfiguration region = RealEstate.getRegionYml().getConfig();
             if(region.get(id)==null)return;
             List<Location> locList =(List<Location>) region.getList(id+".sign");
             locList.remove(e.getBlock().getLocation());
             region.set(id+".sign",locList);
-            RealEstate.region.saveConfig();
+            RealEstate.getRegionYml().saveConfig();
             return;
         }
         sendPrefixMessage(p,"§cこのブロックを壊す権限がありません");
@@ -155,13 +157,13 @@ public class NormalEvent implements Listener {
         if(!REGION_SIGN.matcher(line[0]).matches())return;
         String id = line[0].replace("id:","");
 
-        FileConfiguration region = RealEstate.region.getConfig();
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();
         if(region.get(id)==null)return;
         List<Location> locList = (region.get(id + ".sign") != null) ? (List<Location>)region.getList(id + ".sign") : new ArrayList<>();
 
         //看板が無いのに残っているか確認
         new ArrayList<>(locList).forEach(loc -> { //new ArrayListしないとエラー吐く！
-                Block block = RealEstate.plugin.getServer().getWorld(loc.getWorld().getName()).getBlockAt(loc);
+                Block block = RealEstate.getInstance().getServer().getWorld(loc.getWorld().getName()).getBlockAt(loc);
                 if(block==null)return;
                 BlockState state = block.getState();
                 if (state instanceof Sign && ((Sign) state).getLine(0).equals(PREFIX)) return;
@@ -180,7 +182,7 @@ public class NormalEvent implements Listener {
         Location loc = e.getBlock().getLocation();
         if(!locList.contains(loc))locList.add(e.getBlock().getLocation());
         region.set(id+".sign",locList);
-        RealEstate.region.saveConfig();
+        RealEstate.getRegionYml().saveConfig();
     }
 
     //看板クリック
@@ -191,13 +193,13 @@ public class NormalEvent implements Listener {
         String[] lines = sign.getLines();
         if(!lines[0].equals(PREFIX))return;
         String id = lines[1].replace("§d§lid: ","");
-        FileConfiguration region = RealEstate.region.getConfig();
+        FileConfiguration region = RealEstate.getRegionYml().getConfig();
         if(region.get(id)==null)return;
 
         sendPrefixMessage(p,"§e§l--------------[id:"+id+"の情報]--------------");
         sendPrefixMessage(p,"§6§l所有者: "+lines[2]);
         sendPrefixMessage(p,"§6§lステータス: §a§l"+lines[3]);
-        sendPrefixMessage(p,"§6§l価格: §a§l"+region.get(id+".price")+RealEstate.plugin.getConfig().get("money_unit"));
+        sendPrefixMessage(p,"§6§l価格: §a§l"+region.get(id+".price")+RealEstate.getInstance().getConfig().get("money_unit"));
         Set<String> members = new HashSet<>();
         if(region.getConfigurationSection(id+".user") != null)members = region.getConfigurationSection(id+".user").getKeys(false);
         sendPrefixMessage(p,"§6§l住人の数: §a§l"+members.size()+"人");
